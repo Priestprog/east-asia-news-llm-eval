@@ -57,9 +57,7 @@ Industrial question-answering systems built on large language models (LLM) with 
 
 3. Инвариантность во времени. Пусть $`a^*(q,t)`$ — истинный ответ на вопрос $`q`$ при состоянии мира в момент $`t`$. Вопрос статический, если
 
-   ```math
-   \mathrm{Inv}(q)\iff\exists\,a^*(q)\in\mathcal{A}^+:\ \forall t\ge t_0\quad a^*(q,t)=a^*(q).
-   ```
+   $`\displaystyle \mathrm{Inv}(q)\iff\exists\,a^*(q)\in\mathcal{A}^+:\ \forall t\ge t_0\quad a^*(q,t)=a^*(q).`$
 
    Операционализация: ответ полностью определяется корпусом, $`a^*(q)=g(q,D)`$; существует непустое $`S^*_q\subset\mathcal{I}`$, документы которого влекут $`a^*(q)`$; вопрос содержит явную дату-якорь. Оценка предиката по меткам $`R`$ аннотаторов: $`\widehat{\mathrm{Inv}}(q)=\mathbb{1}\left[\sum_{r=1}^R z_r(q)=R\right]`$, где $`z_r(q)\in\{0,1\}`$ — метка $`r`$-го аннотатора после применения правил исключения: $`E_1`$ — прогнозы и гипотетика; $`E_2`$ — маркеры «сейчас», «на данный момент», «последний», «текущая ситуация»; $`E_3`$ — величины без даты-якоря (цены, курсы, индексы, действующие должностные лица); $`E_4`$ — ответ зависит от момента запроса или политической оценки; $`E_5`$ — ложная предпосылка. В терминах таксономии FreshQA допускаются never-changing вопросы; slow-changing — только с датой-якорем; fast-changing и false-premise исключаются.
 
@@ -67,9 +65,7 @@ Industrial question-answering systems built on large language models (LLM) with 
 
 5. Класс гипотез $`\mathcal{H}=\{f:\mathcal{Q}\to\mathcal{A}\times2^{\mathcal{I}}\}`$, $`f(q)=(\hat a,\hat S)`$ — ответ и множество процитированных документов. Оцениваемое подмножество
 
-   ```math
-   \mathcal{H}_{\text{eval}}=\{f_{\text{prod}}\}\cup\{f_0^{(m)}\}_{m\in\mathcal{L}}\cup\{f_\rho^{(m)}\}_{m\in\mathcal{L}},
-   ```
+   $`\displaystyle \mathcal{H}_{\text{eval}}=\{f_{\text{prod}}\}\cup\{f_0^{(m)}\}_{m\in\mathcal{L}}\cup\{f_\rho^{(m)}\}_{m\in\mathcal{L}},`$
 
    где $`f_{\text{prod}}=g_{\theta_{\text{prod}}}\circ\rho_{\text{prod}}`$ — промышленная система (ретривер Qdrant + SearchAPI и генератор); $`f_0^{(m)}=(g_m(q),\varnothing)`$ — открытая модель $`m`$ без поиска («закрытая книга»); $`f_\rho^{(m)}=g_m\circ\rho_{\text{prod}}`$ — та же выдача промышленного ретривера с другой моделью-генератором (абляция «модель против ретривера»; контексты $`\rho_{\text{prod}}(q)`$ кэшируются и общие для всех $`m`$). $`\mathcal{L}`$ — список открытых моделей провайдера ИВ РАН (раздел «Оцениваемые системы»).
 
@@ -87,17 +83,13 @@ Industrial question-answering systems built on large language models (LLM) with 
 
 2. Валидированное подсемейство метрик
 
-   ```math
-   M'=\{m_k\in M:\ \rho_S(m_k,\bar h)\ge\rho_{\min}\ \text{на}\ G_h\times\mathcal{H}_h\},\qquad \rho_{\min}=0.5,
-   ```
+   $`\displaystyle M'=\{m_k\in M:\ \rho_S(m_k,\bar h)\ge\rho_{\min}\ \text{на}\ G_h\times\mathcal{H}_h\},\qquad \rho_{\min}=0.5,`$
 
    где $`\rho_S`$ — коэффициент ранговой корреляции Спирмена с 95%-м бутстреп-интервалом; потолок для сравнения — среднее попарное согласие людей между собой. Детерминированные метрики без человеческого аналога (Recall@k и т.п.) включаются в $`M'`$ напрямую.
 
 3. Для каждой $`f\in\mathcal{H}_{\text{eval}}`$ и $`m_k\in M'`$ — средние по вопросам
 
-   ```math
-   \bar m_k(f)=\frac{1}{|I_k(f)|}\sum_{i\in I_k(f)}m_k\big(f(q_i);G_i\big),\qquad I_k(f)=\{i:\ m_k(f(q_i);G_i)\ne\mathrm{NA}\};
-   ```
+   $`\displaystyle \bar m_k(f)=\frac{1}{|I_k(f)|}\sum_{i\in I_k(f)}m_k\big(f(q_i);G_i\big),\qquad I_k(f)=\{i:\ m_k(f(q_i);G_i)\ne\mathrm{NA}\};`$
 
    композитный показатель $`Q(f)=\sum_k w_k\,\bar m_k(f)`$, $`w_k\ge0`$, $`\sum_k w_k=1`$ (по умолчанию веса равные); лучшую систему $`f^\star=\arg\max_{f\in\mathcal{H}_{\text{eval}}}Q(f)`$ с проверкой статистической значимости парных различий.
 
