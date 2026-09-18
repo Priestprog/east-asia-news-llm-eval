@@ -216,3 +216,27 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- унаследовано из шаблона курса «Моя первая научная статья» ---
+.DS_Store
+
+# --- LaTeX build artifacts (paper/, slides/) ---
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+
+# --- project-specific ---
+results/runs/
+*.env
+secret.env
+code/notebooks/.ipynb_checkpoints/
+data/golden_set/**/*.tmp

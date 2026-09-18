@@ -1,0 +1,18 @@
+# f_ρ^{(m)} = g_m ∘ ρ_prod — та же выдача ретривера прода (из кэша) с другой моделью:
+# абляция «модель против ретривера». Пример для m = DeepSeek-R1-Distill-Qwen-32B.
+system_id: f_rho__deepseek-r1-distill-qwen-32b
+kind: openai_compat
+retriever: cached_prod
+retriever_cache: results/runs/_retriever_cache/prod.jsonl   # заполняется прогоном f_prod
+k: 5                              # число контекстов из кэша, как у f_prod
+base_url: ${IVRAN_LLM_BASE_URL}
+api_key: ${IVRAN_LLM_API_KEY}
+model_id: DeepSeek-R1-Distill-Qwen-32B-Q5_K_M
+quantization: Q5_K_M
+temperature: 0.0
+max_tokens: 1024
+seed: 20260917
+prompt_version: with_retrieval-v1
+citation_format: inline_numeric   # (N) в тексте → source_map → webpage_id
+abstention_instruction: true
+fail_fast_on_unknown_model: true

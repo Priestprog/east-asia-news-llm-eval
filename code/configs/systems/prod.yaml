@@ -1,0 +1,21 @@
+# f_prod = g_θprod ∘ ρ_prod — промышленная система «Chinese Media Analysis» (репозиторий
+# ivran-lab/chinese-media, ИВ РАН), вызываемая через её HTTP API. Объект исследования,
+# не результат работы. Параметры ретривера соответствуют методу rag_searchapi прод-репозитория.
+system_id: f_prod
+kind: prod_api
+base_url: ${PROD_API_BASE_URL}
+retriever: qdrant+searchapi
+k: 5                  # число чанков из Qdrant
+m: 3                  # число уникальных веб-страниц в контексте
+threshold: 0.3        # порог косинусной близости чанка (в API прода поле называется `treshold`)
+deep_search: true     # включён SearchAPI
+num_docs: 1           # число документов SearchAPI
+temperature: 0.0
+prompt_version: result_model-v1
+generator:
+  expected_model: ${IVRAN_LLM_MODEL}   # ожидаемый генератор; фактический — в поле model каждого ответа
+fail_fast_on_unknown_model: true       # остановка прогона, если model_reported ≠ expected_model
+record:                                # что сохранять в generations.jsonl помимо ответа
+  model_reported: true
+  source_map: true                     # (N) → URL, для перевода цитат в webpage_id
+  retrieved_ids: true                  # ранжированный список идентификаторов для метрик ρ и кэша

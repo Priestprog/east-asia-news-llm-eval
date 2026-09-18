@@ -1,0 +1,66 @@
+# Метаданные цитирования репозитория (Citation File Format 1.2.0).
+# Проверка: make check (валидность YAML) или https://citation-file-format.github.io/cff-initializer-javascript/
+cff-version: 1.2.0
+message: >-
+  Если вы используете этот репозиторий, ссылайтесь на него, как указано ниже.
+  If you use this repository, please cite it as below.
+type: software
+title: "Система оценки качества ответов больших языковых моделей по новостным текстам стран Восточной Азии"
+abstract: >-
+  Bachelor's thesis repository (Faculty of Computational Mathematics and Cybernetics,
+  Lomonosov Moscow State University): a system for evaluating the quality of large language
+  model answers to time-invariant questions about East Asian news texts. It comprises a golden
+  set of questions with reference answers and supporting document identifiers built by
+  independent annotators with agreement control, a family of reference-based, citation,
+  abstention and retrieval metrics together with an LLM-judge rubric, a validation protocol
+  against human ratings, and a statistical comparison of a production retrieval-augmented
+  system with open models with and without retrieval. The current corpus is Chinese-language
+  media (PRC, Taiwan, Hong Kong, Singapore); extension to Japanese and Korean sources is
+  future work.
+authors:
+  - family-names: Bagrov
+    given-names: Alexander
+    affiliation: "Faculty of Computational Mathematics and Cybernetics, Lomonosov Moscow State University"
+    orcid: "https://orcid.org/0009-0008-7005-3796"
+repository-code: "https://github.com/Priestprog/east-asia-news-llm-eval"
+url: "https://github.com/Priestprog/east-asia-news-llm-eval"
+license: MIT
+version: 0.1.0
+date-released: "2026-09-17"
+keywords:
+  - large language models
+  - retrieval-augmented generation
+  - evaluation
+  - LLM-as-a-judge
+  - golden set
+  - question answering
+  - time-invariant questions
+  - Chinese news
+  - East Asia
+  - inter-annotator agreement
+  - Krippendorff's alpha
+references:
+  # Объект исследования: промышленная система «Chinese Media Analysis» (ivran-lab/chinese-media).
+  - type: article
+    title: "К вопросу о цифровых инструментах анализа СМИ стран Северо-Восточной Азии"
+    authors:
+      - family-names: Багров
+        given-names: Александр Михайлович
+      - family-names: Иванченко
+        given-names: Надежда Вадимовна
+      - family-names: Костыркин
+        given-names: Александр Вячеславович
+      - family-names: Кудакаев
+        given-names: Родион Фидельевич
+      - family-names: Маркин
+        given-names: Александр Андреевич
+      - family-names: Мокрецкий
+        given-names: Александр Чеславович
+    journal: "Проблемы Дальнего Востока"
+    year: 2026
+    issue: 1
+    start: 147
+    end: 156
+    doi: 10.7868/S2712909826010109
+    languages: [ru]
+    notes: "Описание программной системы, являющейся объектом исследования; не входит в результаты работы."

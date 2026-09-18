@@ -1,0 +1,77 @@
+# Конфигурация оценки. Обозначения совпадают с docs/problem_statement.md и README.md:
+# G = G+ ⊔ G∅ — эталонная выборка, H_eval — оцениваемые системы, M — семейство метрик,
+# M' — валидированное подсемейство, Q(f) — композитный показатель.
+# Значения вида ${VAR} подставляются из .env / окружения (см. code/README.md).
+
+paths:
+  golden_set: data/golden_set/v1.0/golden_set.jsonl        # заморозка v1.0; sha256 — в data/golden_set/CHANGELOG.md
+  golden_set_schema: data/golden_set/schema.json
+  seed_pool: data/seed_pool/                                # 388 старых вопросов + mapping warc_id → webpage_id
+  human_validation: data/human_validation/                  # оценки h^{(r)}_{i,f} на G_h × H_h
+  runs_dir: results/runs                                    # results/runs/<run_id>/{generations.jsonl, judge.jsonl, meta.json}
+  retriever_cache: results/runs/_retriever_cache/prod.jsonl # кэш выдачи ρ_prod для систем f_ρ^{(m)}
+  tables_dir: results/tables
+  figures_dir: results/figures
+  systems_dir: code/configs/systems
+  judge_config: code/configs/judge.yaml
+
+split: test            # dev (30 вопросов) — отладка промптов и инструкции; test — итоговая таблица
+seed: 20260917         # фиксированный seed бутстрепа, отбора и разбиения
+
+# Первичная метрика фиксируется ДО эксперимента: m_J^corr, если пройдёт валидацию (гипотеза H4),
+# иначе токенный F1. Остальные метрики — вторичные.
+primary_metric: judge_correctness
+fallback_metric: f1
+
+# Статистика парных сравнений (f, f'), f' ≠ f_prod: δ_i = m_k(f(q_i)) − m_k(f'(q_i)) на общих i.
+bootstrap_B: 10000     # число повторов парного бутстрепа по вопросам; перцентильный 95%-й интервал для δ̄
+alpha: 0.05            # уровень значимости критерия Уилкоксона знаковых рангов
+holm: true             # поправка Холма по всем f' ≠ f_prod
+effect_size: cliffs_delta
+
+# Пороги валидации метрик и согласия разметчиков.
+rho_min: 0.5           # ρ_S(m_k, h̄) ≥ rho_min (Спирмен, 95%-й бутстреп-интервал) — условие включения m_k в M'
+alpha_min: 0.67        # Krippendorff α ≥ 0.67 — допустимо
+alpha_reliable: 0.8    # Krippendorff α ≥ 0.8 — надёжно
+pairwise_answer_f1_min: 0.8   # попарный токенный F1 черновых ответов разметчиков
+
+# Параметры компонента ρ, общие для f_prod и f_ρ^{(m)}; k используется метриками Hit@k, Recall@k, nDCG@k.
+retrieval:
+  k: 5
+
+# Семейство метрик M. family ∈ {reference, judge, citation, abstention, retrieval};
+# domain — на какой части G определена метрика (G+, G∅, all); human_analog — есть ли человеческий
+# аналог для валидации по ρ_S. Метрики без аналога (детерминированные) включаются в M' напрямую.
+metrics:
+  - {id: em,                      family: reference,  domain: G+,  human_analog: true,  module: code.eval.metrics_reference, func: exact_match}
+  - {id: f1,                      family: reference,  domain: G+,  human_analog: true,  module: code.eval.metrics_reference, func: token_f1}
+  - {id: bertscore_f1,            family: reference,  domain: G+,  human_analog: true,  module: code.eval.metrics_reference, func: bertscore_f1}
+  - {id: cosine,                  family: reference,  domain: G+,  human_analog: true,  module: code.eval.metrics_reference, func: cosine_similarity}
+  - {id: judge_correctness,       family: judge,      domain: G+,  human_analog: true,  dimension: correctness_vs_reference}
+  - {id: judge_faithfulness,      family: judge,      domain: all, human_analog: true,  dimension: faithfulness}
+  - {id: judge_answer_relevancy,  family: judge,      domain: all, human_analog: true,  dimension: answer_relevancy}
+  - {id: judge_completeness,      family: judge,      domain: G+,  human_analog: true,  dimension: completeness}
+  - {id: judge_citation_accuracy, family: judge,      domain: all, human_analog: true,  dimension: citation_accuracy}
+  - {id: judge_temporal,          family: judge,      domain: all, human_analog: true,  dimension: temporal_correctness}
+  - {id: judge_allegory_idiom,    family: judge,      domain: all, human_analog: true,  dimension: allegory_idiom_quality}
+  - {id: judge_hallucination,     family: judge,      domain: all, human_analog: true,  dimension: hallucination_abstention}
+  - {id: cp_id,                   family: citation,   domain: G+,  human_analog: false, module: code.eval.metrics_citation, func: citation_precision_id}
+  - {id: cr_id,                   family: citation,   domain: G+,  human_analog: false, module: code.eval.metrics_citation, func: citation_recall_id}
+  - {id: cp_ent,                  family: citation,   domain: all, human_analog: true,  module: code.eval.metrics_citation, func: citation_precision_entailment}
+  - {id: ar,                      family: abstention, domain: G∅,  human_analog: false, module: code.eval.metrics_abstention, func: abstention_rate}
+  - {id: one_minus_far,           family: abstention, domain: G+,  human_analog: false, module: code.eval.metrics_abstention, func: false_abstention_rate}
+  - {id: hit_at_k,                family: retrieval,  domain: G+,  human_analog: false, module: code.eval.metrics_retrieval, func: hit_at_k}
+  - {id: recall_at_k,             family: retrieval,  domain: G+,  human_analog: false, module: code.eval.metrics_retrieval, func: recall_at_k}
+  - {id: mrr,                     family: retrieval,  domain: G+,  human_analog: false, module: code.eval.metrics_retrieval, func: mrr}
+  - {id: ndcg_at_k,               family: retrieval,  domain: G+,  human_analog: false, module: code.eval.metrics_retrieval, func: ndcg_at_k}
+
+# Композит Q(f) = Σ_k w_k · m̄_k(f), w_k ≥ 0, Σ w_k = 1; equal — равные веса по всем m_k ∈ M'.
+composite:
+  weights: equal
+
+# Страты для описательной разбивки результатов.
+strata:
+  - category
+  - source
+  - question_type
+  - event_prominence

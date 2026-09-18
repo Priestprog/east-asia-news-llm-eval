@@ -1,0 +1,88 @@
+# Конфигурация судьи-LLM. Ограничение постановки: судья ∉ L ∪ {g_θprod}, то есть модель-судья
+# не совпадает ни с одной из оцениваемых открытых моделей, ни с фактическим генератором прода
+# (DeepSeek-R1-Distill-Qwen-32B). Модель задаётся переменной окружения JUDGE_LLM_MODEL;
+# альтернатива — ансамбль двух судей (поле ensemble). Самопредпочтение проверяется отдельно (H5).
+model: ${JUDGE_LLM_MODEL}
+base_url: ${IVRAN_LLM_BASE_URL}
+api_key: ${IVRAN_LLM_API_KEY}
+ensemble: []                     # дополнительные модели-судьи; при непустом списке итог — среднее по ансамблю
+temperature: 0.0
+n_samples: 1                     # без self-consistency; воспроизводимость судьи оценивается блоком reproducibility
+max_tokens: 1024
+prompt_version: judge-v1
+output_format: json              # контракт ответа: {<dimension>: {score: int 0..5, rationale: str, ...extra}}
+scale: {min: 0, max: 5}          # балл 0–5 → метрика score / 5 ∈ [0, 1]
+fail_fast_on_unknown_model: true # остановка, если поле model ответа не совпадает с запрошенной моделью
+self_preference_check: true      # H5: оценки судьёй ответов, порождённых им самим, против остальных систем
+reproducibility:                 # отчёт о собственной воспроизводимости судьи при temperature 0
+  n_repeats: 3
+  sample_size: 30
+
+# Рубрика: 8 измерений. Первое — новое (m_J^corr, «правильность относительно эталона A*_i»),
+# остальные семь — существующая рубрика production/backend/evaluation/judge/rubric.py
+# репозитория ivran-lab/chinese-media (прототип автора, не запускавшийся; входит в M как
+# кандидатное подсемейство m_J^{(d)}, подлежащее валидации).
+# requires: reference — нужен канонический ответ и алиасы из G+; contexts — нужны процитированные документы.
+dimensions:
+  - key: correctness_vs_reference
+    title_ru: Правильность относительно эталона
+    origin: new
+    requires: [reference]
+    description_ru: >-
+      Совпадает ли ответ по существу с каноническим ответом A*_i или одним из его алиасов
+      (транслитерации, синонимичные формулировки). 0 — противоречит эталону или не содержит его;
+      3 — частично совпадает (верная сущность, неверная деталь); 5 — эквивалентен эталону.
+  - key: faithfulness
+    title_ru: Обоснованность
+    origin: existing
+    requires: [contexts]
+    description_ru: >-
+      Каждое утверждение ответа подтверждается предоставленным контекстом (источниками).
+      0 — много утверждений не выводится из контекста или выдумано; 5 — всё выводится из контекста.
+  - key: answer_relevancy
+    title_ru: Релевантность
+    origin: existing
+    requires: []
+    description_ru: >-
+      Ответ отвечает именно на заданный вопрос, без ухода в сторону. 0 — не по теме; 5 — точно по вопросу.
+  - key: completeness
+    title_ru: Полнота
+    origin: existing
+    requires: [contexts]
+    description_ru: >-
+      Насколько покрыты ключевые аспекты вопроса с учётом доступного контекста.
+      0 — почти ничего; 5 — раскрыты все существенные аспекты.
+  - key: citation_accuracy
+    title_ru: Точность цитирования
+    origin: existing
+    requires: [contexts]
+    extra_fields: {bad_citations: list}
+    description_ru: >-
+      Ссылки вида (N) действительно указывают на источник, поддерживающий утверждение.
+      0 — цитаты отсутствуют или случайны; 5 — каждая цитата корректна.
+      Если в ответе нет цитат, а контекст был, — низкий балл.
+  - key: temporal_correctness
+    title_ru: Временная корректность
+    origin: existing
+    requires: []
+    description_ru: >-
+      Ответ соблюдает временной охват вопроса (вопрос о событиях 2023 года не отвечается данными
+      другого периода). 0 — грубое несоответствие периода; 5 — период верен.
+      Если у вопроса нет явной привязки ко времени — 5.
+  - key: allegory_idiom_quality
+    title_ru: Интерпретация аллегорий
+    origin: existing
+    requires: []
+    extra_fields: {n_idioms_found: int}
+    description_ru: >-
+      Корректность передачи китайских аллегорий, идиом и чэнъюй: даётся ли переносный смысл и,
+      где уместно, оригинал. 0 — буквально или неверно; 5 — верная интерпретация.
+      Если аллегорий и идиом в материале нет — 5 и n_idioms_found = 0.
+  - key: hallucination_abstention
+    title_ru: Отсутствие галлюцинаций
+    origin: existing
+    requires: [contexts]
+    extra_fields: {abstained: bool}
+    description_ru: >-
+      5 — модель корректно воздержалась («Я не знаю.») при нехватке контекста либо не выдумывала;
+      0 — уверенно сообщает выдуманные факты. Поле abstained = true, если ответ — отказ.

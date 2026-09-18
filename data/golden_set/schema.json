@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Priestprog/east-asia-news-llm-eval/blob/main/data/golden_set/schema.json",
+  "title": "Запись эталонной выборки (Golden Set)",
+  "description": "Одна строка файла JSONL эталонной выборки G = G+ ⊔ G∅ вопросов с инвариантным во времени ответом по корпусу новостных текстов. Записи G+ имеют answerable = true, непустой answer и supporting_docs; записи G∅ имеют answerable = false, answer = null, supporting_docs = [] и обязательное поле provenance.unanswerable_check. Обозначения — как в docs/problem_statement.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "split",
+    "question",
+    "question_type",
+    "category",
+    "answerable",
+    "answer",
+    "supporting_docs",
+    "requires_multi_doc",
+    "time_invariance",
+    "difficulty",
+    "provenance"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^gs-[0-9]{4}$",
+      "description": "Стабильный идентификатор элемента; не переиспользуется между версиями, при удалении элемента его id не занимается повторно."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+(-[a-z0-9]+)?$",
+      "description": "Версия выборки, в которой запись зафиксирована: v0.1-pilot, v1.0 и т. д. (см. CHANGELOG.md)."
+    },
+    "split": {
+      "enum": ["dev", "test"],
+      "description": "Разбиение: dev (около 30 элементов, для настройки промптов и порогов) и test (для итоговой таблицы)."
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ru"],
+      "properties": {
+        "ru": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Основная формулировка вопроса q на русском языке; именно она подаётся системам f."
+        },
+        "zh": {
+          "type": ["string", "null"],
+          "description": "Перевод вопроса на китайский (необязательно; для кросс-языковой проверки поиска)."
+        },
+        "en": {
+          "type": ["string", "null"],
+          "description": "Перевод вопроса на английский (необязательно)."
+        }
+      }
+    },
+    "question_type": {
+      "enum": ["who", "what", "when", "where", "how_many", "which", "yes_no", "list"],
+      "description": "Форма вопроса (см. docs/annotation_guidelines.md, раздел 9)."
+    },
+    "category": {
+      "enum": [
+        "politics",
+        "economy",
+        "society",
+        "international",
+        "security",
+        "technology",
+        "culture",
+        "health",
+        "environment",
+        "other"
+      ],
+      "description": "Тематическая категория спрашиваемого факта."
+    },
+    "answerable": {
+      "type": "boolean",
+      "description": "true — элемент из G+ (корпус влечёт ответ); false — элемент из G∅ (правильный ответ — отказ)."
+    },
+    "answer": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/answer" }
+      ],
+      "description": "Канонический ответ A*_i с алиасами; null для записей G∅."
+    },
+    "supporting_docs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/supporting_doc" },
+      "description": "Множество S*_i документов корпуса, влекущих ответ; пустое для записей G∅."
+    },
+    "requires_multi_doc": {
+      "type": "boolean",
+      "description": "true, если ответ невозможно получить из одного документа (тогда |S*_i| ≥ 2)."
+    },
+    "time_invariance": { "$ref": "#/$defs/time_invariance" },
+    "difficulty": {
+      "enum": ["easy", "medium", "hard"],
+      "description": "Сложность по инструкции аннотатора, раздел 10."
+    },
+    "provenance": { "$ref": "#/$defs/provenance" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "answerable": { "const": false } },
+        "required": ["answerable"]
+      },
+      "then": {
+        "properties": {
+          "answer": { "type": "null" },
+          "supporting_docs": { "maxItems": 0 },
+          "requires_multi_doc": { "const": false },
+          "provenance": { "required": ["unanswerable_check"] }
+        }
+      },
+      "else": {
+        "properties": {
+          "answer": { "type": "object" },
+          "supporting_docs": { "minItems": 1 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "requires_multi_doc": { "const": true } },
+        "required": ["requires_multi_doc"]
+      },
+      "then": {
+        "properties": { "supporting_docs": { "minItems": 2 } }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provenance": {
+            "properties": { "adjudicated": { "const": false } },
+            "required": ["adjudicated"]
+          }
+        },
+        "required": ["provenance"]
+      },
+      "then": {
+        "properties": {
+          "time_invariance": {
+            "properties": {
+              "votes": { "items": { "const": 1 } }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "provenance": { "required": ["adjudication_note"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical", "aliases", "type", "lang"],
+      "properties": {
+        "canonical": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "description": "Каноническая формулировка ответа a*(q) (инструкция, раздел 7)."
+        },
+        "aliases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Эквивалентные написания: транслитерации, оригинал, аббревиатуры, числовые форматы. EM и F1 берутся как максимум по {canonical} ∪ aliases."
+        },
+        "type": {
+          "enum": [
+            "entity",
+            "person",
+            "organization",
+            "location",
+            "date",
+            "number",
+            "quantity",
+            "percentage",
+            "boolean",
+            "list",
+            "short_text"
+          ],
+          "description": "Тип канонического ответа."
+        },
+        "lang": {
+          "enum": ["ru", "zh", "en"],
+          "description": "Язык канонического ответа; в v1.0 всегда ru."
+        }
+      }
+    },
+    "supporting_doc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "webpage_id",
+        "urn_uuid",
+        "uri",
+        "published_at",
+        "source",
+        "evidence_span_ru",
+        "evidence_span_zh"
+      ],
+      "properties": {
+        "webpage_id": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Стабильный идентификатор документа ι_j в webmedia.webpages (колонка id)."
+        },
+        "urn_uuid": {
+          "type": "string",
+          "format": "uuid",
+          "description": "UUID записи WARC (WARC-Record-ID без обёртки urn:uuid:)."
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL исходной публикации u_j."
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Дата публикации τ_j ≤ t_0 в формате YYYY-MM-DD."
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Источник s_j: доменное имя (netloc) издания."
+        },
+        "evidence_span_ru": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "description": "Короткий фрагмент машинного перевода, влекущий ответ (не более 300 символов)."
+        },
+        "evidence_span_zh": {
+          "type": ["string", "null"],
+          "maxLength": 300,
+          "description": "Соответствующий фрагмент оригинала; null допускается только если фрагмент в оригинале не выделяется (например, ответ следует из таблицы)."
+        }
+      }
+    },
+    "time_invariance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "anchor_date", "votes", "exclusion_rules_checked"],
+      "properties": {
+        "label": {
+          "enum": ["never_changing", "slow_changing_anchored"],
+          "description": "never_changing — факт не меняется в принципе; slow_changing_anchored — медленно меняющаяся величина, зафиксированная датой-якорем. Записи fast-changing и false-premise в выборку не входят."
+        },
+        "anchor_date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12][0-9]|3[01]))?|-Q[1-4]|-H[12])?$",
+          "description": "Дата-якорь события с точностью до дня (YYYY-MM-DD), месяца (YYYY-MM), квартала (YYYY-Qn), полугодия (YYYY-Hn) или года (YYYY)."
+        },
+        "votes": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "enum": [0, 1] },
+          "description": "Метки инвариантности z_r(q) трёх аннотаторов (R = 3) в порядке provenance.annotators. Для неадъюдицированных записей все равны 1 (единогласие)."
+        },
+        "exclusion_rules_checked": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": { "enum": ["E1", "E2", "E3", "E4", "E5"] },
+          "description": "Подтверждение, что каждое из правил исключения E1–E5 было проверено."
+        }
+      }
+    },
+    "unanswerable_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "retriever", "k", "queries", "answerable_votes", "checked_at"],
+      "properties": {
+        "method": {
+          "enum": ["retrieval_topk", "manual_search", "retrieval_topk_and_manual"],
+          "description": "Как проверялось отсутствие ответа в корпусе."
+        },
+        "retriever": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Идентификатор ретривера ρ, выдача которого просматривалась (например, prod_qdrant)."
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Глубина просмотренной выдачи."
+        },
+        "queries": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Запросы, по которым просматривалась выдача (исходный вопрос и переформулировки)."
+        },
+        "answerable_votes": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": { "enum": [0, 1] },
+          "description": "Метки отвечаемости трёх аннотаторов; для записи G∅ все равны 0 либо запись адъюдицирована."
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date",
+          "description": "Дата проверки (снимок корпуса D_{t_0} к этому моменту зафиксирован)."
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "draft_model",
+        "draft_prompt_id",
+        "seed_pool_ref",
+        "annotators",
+        "adjudicated",
+        "created_at"
+      ],
+      "properties": {
+        "draft_model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Модель g_draft, породившая черновик вопроса и ответа; не входит в множество оцениваемых моделей."
+        },
+        "draft_prompt_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Идентификатор версии промпта генерации черновиков (code/configs)."
+        },
+        "seed_pool_ref": {
+          "type": ["string", "null"],
+          "description": "Ссылка на вопрос из data/seed_pool (ключ warc_id или индекс), если черновик получен из seed pool; null для вновь сгенерированных."
+        },
+        "annotators": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^A[0-9]+$" },
+          "description": "Обезличенные идентификаторы аннотаторов (A1, A2, A3); порядок задаёт порядок голосов."
+        },
+        "adjudicated": {
+          "type": "boolean",
+          "description": "true, если элемент включён решением адъюдикатора при отсутствии единогласия."
+        },
+        "adjudication_note": {
+          "type": ["string", "null"],
+          "description": "Причина и суть решения адъюдикатора; обязательна при adjudicated = true."
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Момент фиксации записи (ISO 8601, UTC)."
+        },
+        "unanswerable_check": { "$ref": "#/$defs/unanswerable_check" }
+      }
+    }
+  }
+}

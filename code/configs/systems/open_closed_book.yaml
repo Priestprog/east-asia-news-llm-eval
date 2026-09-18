@@ -1,0 +1,17 @@
+# f_0^{(m)} = (g_m(q), ∅) — открытая модель провайдера ИВ РАН без поиска («закрытая книга»).
+# Пример для m = DeepSeek-R1-Distill-Qwen-32B; для остальных m ∈ L создаются копии файла
+# с другим model_id и system_id (L — модели из docs/systems.md).
+system_id: f_0__deepseek-r1-distill-qwen-32b
+kind: openai_compat
+retriever: none
+base_url: ${IVRAN_LLM_BASE_URL}
+api_key: ${IVRAN_LLM_API_KEY}
+model_id: DeepSeek-R1-Distill-Qwen-32B-Q5_K_M
+quantization: Q5_K_M
+temperature: 0.0
+max_tokens: 1024
+seed: 20260917
+prompt_version: closed_book-v1
+abstention_instruction: true      # промпт разрешает ответ «Я не знаю.»
+fail_fast_on_unknown_model: true  # проверка model_id по снимку /v1/models до прогона; провайдер llama-swap
+                                  # иначе тихо подменяет неизвестную модель

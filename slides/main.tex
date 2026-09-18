@@ -1,0 +1,200 @@
+\documentclass[aspectratio=169]{beamer}
+
+% \graphicspath{{figs}}  % your figures here
+
+\usepackage{cmap}
+\usepackage[T2A,T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{array}
+\usepackage{multicol}
+\usepackage{booktabs}
+\usepackage{csquotes}
+\usepackage{amssymb,amsfonts,amsmath}
+
+\usecolortheme{beaver}
+\usefonttheme[onlymath]{serif}  % math fonts as in article
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[page number]
+\setbeamertemplate{blocks}[rounded=true,shadow=true]
+\setbeamersize{text margin left=0.5cm,text margin right=0.5cm}
+\setbeamerfont{author}{size=\normalsize}
+\setbeamerfont{institute}{size=\normalsize}
+\setbeamerfont{date}{size=\normalsize}
+
+% Обозначения, совпадающие с paper/main.tex и docs/problem_statement.md.
+\newcommand{\I}{\mathbb{I}}
+\newcommand{\Inv}{\mathrm{Inv}}
+\newcommand{\Heval}{\mathcal{H}_{\mathrm{eval}}}
+\newcommand{\fprod}{f_{\mathrm{prod}}}
+\newcommand{\NA}{\mathrm{NA}}
+\newcommand{\mcorr}{m_J^{\mathrm{corr}}}
+\newcommand{\CP}{\mathrm{CP}}
+\newcommand{\AR}{\mathrm{AR}}
+\newcommand{\FAR}{\mathrm{FAR}}
+
+\title{Система оценки качества ответов больших языковых моделей по новостным текстам стран Восточной Азии}
+\subtitle{A System for Evaluating the Quality of Large Language Model Answers on East Asian News Texts}
+\author{
+    Багров Александр Михайлович\\
+    Научный руководитель: Воронцов Константин Вячеславович, д.\,ф.-м.\,н.
+}
+\institute{
+    Факультет вычислительной математики и кибернетики МГУ имени М.\,В.~Ломоносова\\
+    Проект по курсу: оформление по шаблону <<Моя первая научная статья>>
+}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}
+    \thispagestyle{empty}
+    \maketitle
+\end{frame}
+
+\begin{frame}{Система оценки качества ответов больших языковых моделей}
+    Промышленная RAG-система <<Chinese Media Analysis>> (ИВ~РАН) отвечает по-русски на вопросы по 23,9~млн фрагментов китайскоязычных СМИ, но качество её ответов до сих пор оценивалось только качественно.
+    \begin{block}{Цель}
+        Построить систему оценки качества \emph{ответов} $\hat a=f(q)$ на вопросы о новостном корпусе: эталонную выборку, валидированные метрики и статистический протокол сравнения.
+    \end{block}
+    \begin{block}{Проблема}
+        Готовые средства оценки RAG опираются на невалидированного LLM-судью; существующие наборы вопросов устаревают, так как ответы зависят от времени; сравнение промышленной системы с открытыми моделями не проводилось.
+    \end{block}
+    \begin{block}{Решение}
+        \begin{enumerate}[1)]
+            \item Ограничиться статическими вопросами: $\Inv(q)$~--- ответ не меняется при $t\ge t_0$.
+            \item Построить $G=G^+\sqcup G^{\varnothing}$ с разметкой $R=3$ и согласием Криппендорфа $\alpha$.
+            \item Отобрать метрики $M'\subset M$ по согласию с людьми и сравнить 13~систем по $Q(f)$.
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Работа на одном слайде}
+    От снимка корпуса к таблице результатов: шесть этапов, каждый воспроизводим по опубликованным конфигурациям.
+    \begin{center}
+    \begin{tikzpicture}[
+        node distance=2.5mm,
+        stage/.style={draw, rounded corners, align=center, font=\scriptsize,
+                      text width=2.05cm, minimum height=1.15cm, inner sep=2pt},
+        >={Stealth[length=2mm]}
+    ]
+        \node[stage] (a) {Снимок корпуса $D_{t_0}$, стратифицированный отбор};
+        \node[stage, right=of a] (b) {Черновики $(q,a,S)$ моделью $g_{\mathrm{draft}}\notin\mathcal{L}$};
+        \node[stage, right=of b] (c) {Разметка $R=3$, правила $E_1$--$E_5$, согласие $\alpha$};
+        \node[stage, right=of c] (d) {Эталонная выборка $G=G^+\sqcup G^{\varnothing}$};
+        \node[stage, right=of d] (e) {Метрики $M$, валидация $M'$ по $\bar h$};
+        \node[stage, right=of e] (f) {Прогоны $\Heval$, статистика, $Q(f)$};
+        \draw[->] (a) -- (b);
+        \draw[->] (b) -- (c);
+        \draw[->] (c) -- (d);
+        \draw[->] (d) -- (e);
+        \draw[->] (e) -- (f);
+    \end{tikzpicture}
+    \end{center}
+    \begin{columns}
+    \begin{column}{0.5\textwidth}
+        \begin{enumerate}[1)]
+            \item Обозначения: $D$, $\mathcal{Q}$, $\mathcal{A}=\mathcal{A}^+\sqcup\{\varnothing\}$, $\mathcal{I}$, $\Inv(q)$, $G$, $\mathcal{H}$, $M$, $Q(f)$.
+            \item Объекты: ответ $\hat a=f(q)$~--- объект измерения; система $f$ входит только через $f(q)$.
+        \end{enumerate}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+        \begin{enumerate}[1)]
+            \item Данные: $n=200$--$300$ статических вопросов, $n_\varnothing\approx0{,}1\,n$.
+            \item Системы: $\fprod$ и 6~открытых моделей в двух режимах ($|\Heval|=13$).
+        \end{enumerate}
+    \end{column}
+    \end{columns}
+    Следствие: получаем долговечный эталон, метрики с известным согласием с человеком и таблицу сравнения с интервалами и поправкой на множественные сравнения.
+\end{frame}
+
+\begin{frame}{Постановка задачи}
+    \small
+    \textbf{Дано.} Снимок корпуса $D=\{d_j\}_{j=1}^N$, $d_j=(\iota_j,u_j,\tau_j,s_j,x_j^{zh},x_j^{ru})$, $\tau_j\le t_0$; пространства $\mathcal{Q}$, $\mathcal{A}=\mathcal{A}^+\sqcup\{\varnothing\}$, $2^{\mathcal{I}}$;
+    \[
+        \Inv(q)\iff\exists\,a^*(q)\in\mathcal{A}^+:\ \forall t\ge t_0\quad a^*(q,t)=a^*(q),
+        \qquad
+        \widehat{\Inv}(q)=\I\Bigl[\textstyle\sum_{r=1}^{R} z_r(q)=R\Bigr].
+    \]
+    Эталонная выборка $G=G^+\sqcup G^{\varnothing}$, $G^+=\{(q_i,A^*_i,S^*_i,\mu_i)\}_{i=1}^{n_+}$, $\widehat{\Inv}(q_i)=1$.
+    Класс гипотез $\mathcal{H}=\{f:\mathcal{Q}\to\mathcal{A}\times2^{\mathcal{I}}\}$,
+    $\Heval=\{\fprod\}\cup\{f_0^{(m)}\}_{m\in\mathcal{L}}\cup\{f_\rho^{(m)}\}_{m\in\mathcal{L}}$.
+    Метрики $M=\{m_k\}$, $m_k:\mathcal{A}\times2^{\mathcal{I}}\times G_i\to[0,1]\cup\{\NA\}$; оценки людей $\bar h_{i,f}$ на $G_h\subset G^+$.
+
+    \medskip
+    \textbf{Найти.} Выборку $G$; валидированное подсемейство метрик и лучшую систему:
+    \[
+        M'=\{m_k\in M:\ \rho_S(m_k,\bar h)\ge\rho_{\min}\},\ \rho_{\min}=0{,}5;\qquad
+        Q(f)=\sum_{k} w_k\,\bar m_k(f),\qquad
+        f^\star=\arg\max_{f\in\Heval} Q(f).
+    \]
+
+    \textbf{Критерий.} Первичная метрика $\mcorr$ (иначе F1); парный бутстреп по вопросам ($B=10^4$), критерий Уилкоксона, поправка Холма, уровень значимости $0{,}05$.
+
+    \medskip
+    \textbf{Основная гипотеза} $H_1$: $Q(\fprod)>Q(f_0^{(m)})$ для всех $m\in\mathcal{L}$.
+\end{frame}
+
+\begin{frame}{Решение: методика построения системы оценки}
+    \begin{enumerate}[1)]
+        \item \textbf{Отбор и черновики.} Стратифицированный отбор документов (домен $\times$ месяц $\times$ категория, переизбыток $\times2$); черновики $(q,a,S,\text{evidence})$ моделью $g_{\mathrm{draft}}\notin\mathcal{L}$; 388 старых вопросов~--- исходный пул.
+        \item \textbf{Разметка.} $R=3$ независимых аннотатора (не менее одного читающего по-китайски); правила исключения $E_1$--$E_5$; классы FreshQA: never-changing и slow-changing с датой-якорем.
+        \item \textbf{Согласие и сборка $G$.} Криппендорф $\alpha\ge0{,}67$; попарный F1 ответов $\ge0{,}8$; включение при единогласии, иначе адъюдикация; пилот 30 $\to$ полный прогон $\to$ заморозка \texttt{v1.0}.
+        \item \textbf{Метрики $M$.} По эталону: EM, F1, BERTScore, $\mcorr$ (новое измерение); цитирование: $\CP_{\mathrm{id}}$, $\mathrm{CR}_{\mathrm{id}}$, $\CP_{\mathrm{ent}}$; отказы: $\AR$, $1-\FAR$; поиск: Hit@$k$, Recall@$k$, MRR, nDCG@$k$. Существующий семимерный судья~--- кандидатное подсемейство.
+        \item \textbf{Валидация $M'$.} Оценки людей на $G_h$ ($n_h=100$); отбор по $\rho_S\ge0{,}5$ с бутстреп-интервалом; проверка самопредпочтения судьи ($H_5$).
+        \item \textbf{Прогоны и статистика.} 13 систем при temperature~$0$; $Q(f)$, парный бутстреп, Уилкоксон, Холм, $\delta$ Клиффа; разбивка по стратам.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{План экспериментов}
+    \begin{columns}
+        \begin{column}{0.42\textwidth}
+            \small
+            \textbf{Системы} ($|\Heval|=13$): $\fprod$ (Qdrant + SearchAPI + генератор) и $\mathcal{L}$~--- шесть открытых моделей провайдера ИВ~РАН в режимах без поиска $f_0^{(m)}$ и с общим ретривером $f_\rho^{(m)}$.
+
+            \medskip
+            \textbf{Размеры:} $n=200$--$300$ вопросов ($n\ge150$), $n_\varnothing\approx0{,}1\,n$, $R=3$, $n_h=100$.
+
+            \medskip
+            \textbf{Бюджет:} разметка $\approx21$~ч на аннотатора; $\approx4750$ генераций ($\approx40$~ч); судья $\approx25$~ч.
+
+            \medskip
+            \textbf{Гипотезы:} $H_1$--$H_3$~--- сравнение по $Q(f)$; $H_4$~--- $\rho_S(\mcorr,\bar h)\ge0{,}5$, $\alpha\ge0{,}67$; $H_5$~--- самопредпочтение судьи незначимо.
+        \end{column}
+        \begin{column}{0.56\textwidth}
+            \centering
+            \scriptsize
+            \begin{tabular}{@{}llccccc@{}}
+                \toprule
+                Система & Режим & $\mcorr$ & F1 & $\CP_{\mathrm{id}}$ & $\AR$ & $Q(f)$ \\
+                \midrule
+                $\fprod$ & Qdrant + SearchAPI & $\dots$ & $\dots$ & $\dots$ & $\dots$ & $\dots$ \\
+                \midrule
+                $f_0^{(m_1)}$ & без поиска & $\dots$ & $\dots$ & $\NA$ & $\dots$ & $\dots$ \\
+                $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ \\
+                $f_0^{(m_6)}$ & без поиска & $\dots$ & $\dots$ & $\NA$ & $\dots$ & $\dots$ \\
+                \midrule
+                $f_\rho^{(m_1)}$ & $\rho_{\mathrm{prod}}$ & $\dots$ & $\dots$ & $\dots$ & $\dots$ & $\dots$ \\
+                $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ \\
+                $f_\rho^{(m_6)}$ & $\rho_{\mathrm{prod}}$ & $\dots$ & $\dots$ & $\dots$ & $\dots$ & $\dots$ \\
+                \bottomrule
+            \end{tabular}
+
+            \medskip
+            \tiny В ячейках~--- $\bar m_k(f)$ с 95\,\%-м бутстреп-интервалом; звёздочка~--- значимое отличие от $\fprod$ после поправки Холма. Значения появятся после прогонов (январь--февраль 2027).
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Заключение}
+    \begin{enumerate}[1)]
+        \item Будет формализована задача оценки качества ответов на статические вопросы по новостному корпусу: предикат $\Inv(q)$, класс гипотез $\Heval$, семейство метрик $M$, показатель $Q(f)$ и критерий сравнения.
+        \item Будет построена и опубликована эталонная выборка $G=G^+\sqcup G^{\varnothing}$ ($n=200$--$300$) с разметкой $R=3$ аннотаторами, мерой согласия $\alpha$ и стабильными идентификаторами документов.
+        \item Будет получено валидированное подсемейство метрик $M'$, включающее метрику правильности по эталону $\mcorr$ и метрики цитирования и отказов, с оценкой согласия с человеком $\rho_S$.
+        \item Будет проведено первое систематическое сравнение промышленной системы с открытыми моделями (13~систем) с бутстреп-интервалами и поправкой Холма; проверены гипотезы $H_1$--$H_5$.
+    \end{enumerate}
+\end{frame}
+
+\end{document}
