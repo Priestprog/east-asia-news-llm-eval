@@ -2,8 +2,8 @@
 
 Программный каркас ВКР «Система оценки качества ответов больших языковых моделей по новостным
 текстам стран Восточной Азии». Здесь живут три пакета: построение эталонной выборки
-$G = G^+ \sqcup G^{\varnothing}$, обёртки оцениваемых систем $\mathcal{H}_{\mathrm{eval}}$
-и семейство метрик $M$ с валидацией, статистикой и отчётными таблицами. Обозначения совпадают
+$`G = G^+ \sqcup G^{\varnothing}`$, обёртки оцениваемых систем $`\mathcal{H}_{\mathrm{eval}}`$
+и семейство метрик $`M`$ с валидацией, статистикой и отчётными таблицами. Обозначения совпадают
 с постановкой задачи в `README.md` репозитория и `docs/problem_statement.md`.
 
 > [!IMPORTANT]
@@ -35,14 +35,14 @@ pip install -r requirements.txt
 
 | Переменная | Назначение |
 |---|---|
-| `IVRAN_LLM_BASE_URL` | OpenAI-совместимый адрес провайдера ИВ РАН (llama-swap) для открытых моделей $\mathcal{L}$ и судьи |
+| `IVRAN_LLM_BASE_URL` | OpenAI-совместимый адрес провайдера ИВ РАН (llama-swap) для открытых моделей $`\mathcal{L}`$ и судьи |
 | `IVRAN_LLM_API_KEY` | ключ провайдера |
 | `IVRAN_LLM_MODEL` | модель генератора промышленной системы (ожидаемая; фактическая берётся из поля `model` ответа) |
-| `JUDGE_LLM_MODEL` | модель-судья; должна быть вне $\mathcal{L}$ и не совпадать с генератором прода |
-| `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION` | векторная база корпуса (23,9 млн чанков) — для пересечения с `webmedia` и снимка $\mathcal{I}$ |
+| `JUDGE_LLM_MODEL` | модель-судья; должна быть вне $`\mathcal{L}`$ и не совпадать с генератором прода |
+| `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION` | векторная база корпуса (23,9 млн чанков) — для пересечения с `webmedia` и снимка $`\mathcal{I}`$ |
 | `WEBMEDIA_POSTGRES_HOST`, `WEBMEDIA_POSTGRES_PORT` | PostgreSQL с таблицей `webmedia.webpages` (метаданные документов, `webpage_id`, `urn_uuid`, `uri`) |
 | `WEBMEDIA_CC_NEWS_USER`, `WEBMEDIA_CC_NEWS_USER_PASSWORD`, `WEBMEDIA_CC_NEWS_DB_NAME` | учётные данные и имя базы `webmedia` |
-| `PROD_API_BASE_URL` | HTTP API промышленной системы «Chinese Media Analysis» ($f_{\mathrm{prod}}$) |
+| `PROD_API_BASE_URL` | HTTP API промышленной системы «Chinese Media Analysis» ($`f_{\mathrm{prod}}`$) |
 
 Пример `.env` (значения условные):
 
@@ -103,9 +103,9 @@ code/
 └── requirements.txt
 ```
 
-Соглашение о NA: значение `None` обозначает $\mathrm{NA}$ — метрика не определена для данной пары
+Соглашение о NA: значение `None` обозначает $`\mathrm{NA}`$ — метрика не определена для данной пары
 (ответ, эталон); правило NA каждой метрики записано в её докстринге. Агрегация
-$\bar m_k(f)$ идёт по $I_k(f) = \{i : m_k \ne \mathrm{NA}\}$.
+$`\bar m_k(f)`$ идёт по $`I_k(f) = \{i : m_k \ne \mathrm{NA}\}`$.
 
 ## Запуск
 
@@ -115,13 +115,13 @@ $\bar m_k(f)$ идёт по $I_k(f) = \{i : m_k \ne \mathrm{NA}\}$.
 
 | Цель | Что делает |
 |---|---|
-| `make drafts` | отбор документов, черновики моделью $g_{\mathrm{draft}}$, листы разметки |
-| `make agreement` | Krippendorff $\alpha$, Fleiss $\kappa$, попарный F1 ответов разметчиков |
+| `make drafts` | отбор документов, черновики моделью $`g_{\mathrm{draft}}`$, листы разметки |
+| `make agreement` | Krippendorff $`\alpha`$, Fleiss $`\kappa`$, попарный F1 ответов разметчиков |
 | `make build-gs` | адъюдикация и сборка Golden Set версии `GS_VERSION` (JSONL, sha256) |
 | `make run SYSTEM=code/configs/systems/prod.yaml` | генерации системы на split из `eval.yaml` |
 | `make judge RUN_ID=<run_id>` | оценка генераций судьёй |
-| `make validate` | отбор $M'$ по согласию с разметчиками → `results/tables/validation.csv` |
-| `make stats` | парный бутстреп, Уилкоксон, Холм, Cliff's $\delta$ относительно $f_{\mathrm{prod}}$ |
+| `make validate` | отбор $`M'`$ по согласию с разметчиками → `results/tables/validation.csv` |
+| `make stats` | парный бутстреп, Уилкоксон, Холм, Cliff's $`\delta`$ относительно $`f_{\mathrm{prod}}`$ |
 | `make tables` | `results/tables/main_table.md`, `main_table_long.csv` |
 | `make check` | `py_compile` всех модулей, импорт пакетов, валидация JSON и YAML |
 
@@ -132,4 +132,4 @@ make check PYTHON=code/.venv/bin/python
 ```
 
 Порядок для полного эксперимента: `drafts → agreement → build-gs → run` (сначала `prod.yaml`,
-он заполняет кэш ретривера; затем `open_*.yaml` для каждой $m \in \mathcal{L}$) `→ judge → validate → stats → tables`.
+он заполняет кэш ретривера; затем `open_*.yaml` для каждой $`m \in \mathcal{L}`$) `→ judge → validate → stats → tables`.
