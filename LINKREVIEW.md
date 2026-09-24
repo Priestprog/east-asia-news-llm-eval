@@ -8,100 +8,779 @@
 
 ## Как читать
 
-Работы сгруппированы в четыре тематических блока, соответствующих структуре главы «Обзор» выпускной квалификационной работы «Система оценки качества ответов больших языковых моделей по новостным текстам стран Восточной Азии»:
+Обзор литературы выпускной квалификационной работы «Система оценки качества ответов больших языковых моделей по новостным текстам стран Восточной Азии» оформлен нумерованным списком по пяти блокам, соответствующим структуре главы «Обзор». Каждая позиция содержит название, авторов, год, площадку и ссылку; строку **Суть** — что сделано в работе; строку **Вердикт** — отношение работы к гипотезам $`H_1`$–$`H_5`$ и методологическим положениям $`П_1`$–$`П_9`$ постановки (*поддерживает* — даёт аргумент за гипотезу, положение или методику; *опровергает* — даёт контраргумент или показывает ограничение; *уточняет* — задаёт условия, пороги или поправки; *нейтрально* — фон); строку **Где пригодится** — разделы работы, в которых на позицию будет ссылка. Обозначения ($`G = G^+ \sqcup G^{\varnothing}`$, $`S^*_i`$, $`M`$, $`M'`$, $`m_J^{\text{corr}}`$, $`\mathrm{Inv}(q)`$, $`f_{\text{prod}}`$, $`f_0^{(m)}`$, $`f_\rho^{(m)}`$, $`\mathcal{L}`$, $`E_1`$–$`E_5`$) соответствуют формальной постановке в [README.md](README.md) и [docs/problem_statement.md](docs/problem_statement.md).
 
-- **1. Оценка RAG** — оценка систем генерации с поиском (retrieval-augmented generation, RAG) и вопросно-ответных систем: семейства метрик, бенчмарки, обзоры. Первая строка группы — статья автора в журнале «Проблемы Дальнего Востока» (2026), описывающая **объект исследования** — промышленную систему «Chinese Media Analysis».
-- **2. LLM-судья** — большие языковые модели (LLM) в роли судьи и их смещения: согласие с людьми, позиционное смещение, самопредпочтение, бенчмарки судей.
-- **3. Временная динамика и выборки** — таксономии статических и динамических вопросов, протоколы построения и разметки эталонных выборок, меры согласия аннотаторов (Cohen $`\kappa`$, Fleiss $`\kappa`$, Krippendorff $`\alpha`$).
-- **4. Китайско- и русскоязычные ресурсы, метрики генерации, модели** — подгруппы **4a** (бенчмарки и датасеты для китайского и русского языков), **4b** (метрики качества текста, фактологии и цитирования), **4c** (открытые и промышленные модели, входящие в множество бейзлайнов $`\mathcal{L}`$ или исторически связанные с прод-системой).
+**Блоки.** 1 — оценка систем генерации с поиском (RAG) и вопросно-ответных систем: метрики, бенчмарки, обзоры, а также основы информационного поиска и вопросно-ответных систем XX века. 2 — большие языковые модели в роли судьи: смещения, согласие с людьми, мета-оценка судей. 3 — временная динамика вопросов, построение эталонных выборок, протоколы разметки и меры согласия аннотаторов. 4 — китайско- и русскоязычные ресурсы, кросс-языковой поиск, метрики качества текста, фактологии и цитирования. 5 — статистика сравнения систем: критерии, бутстреп, множественные сравнения, размер эффекта, надёжность бенчмарков.
 
-Всего 86 позиций: 85 из верифицированного отчёта разведки (ссылки проверены по arXiv API и ACL Anthology 17.09.2026) и статья автора. Колонка Paper содержит ссылку на arXiv, DOI или ACL Anthology; рецензируемая площадка, если она известна, указана в конце Summary. Колонка Code содержит только официальные репозитории, в которых есть уверенность, иначе «—». Две позиции с пометкой UNVERIFIED (Llama 4, YandexGPT 5) не имеют рецензируемой публикации и цитируются как web-источники (блог, model card). Обозначения в колонке Summary ($`D`$, $`G = G^+ \sqcup G^{\varnothing}`$, $`M`$, $`M'`$, $`\mathrm{Inv}(q)`$, $`f_{\text{prod}}`$, $`f_0^{(m)}`$, $`f_\rho^{(m)}`$, $`\mathcal{L}`$, $`S^*_i`$, $`E_1`$–$`E_5`$, $`H_1`$–$`H_5`$) соответствуют формальной постановке задачи в README.md и docs/problem_statement.md.
+**Гипотезы** (README, раздел «Гипотезы»; `docs/problem_statement.md`, §9): $`H_1`$ — промышленная система с поиском превосходит любую открытую модель без поиска; $`H_2`$ — превосходит её и при общей выдаче ретривера; $`H_3`$ — поиск повышает качество ответов каждой модели; $`H_4`$ — судья согласован с людьми ($`\rho_S \ge 0.5`$), а аннотаторы согласованы между собой ($`\alpha \ge 0.67`$); $`H_5`$ — самопредпочтение судьи статистически незначимо.
 
-| Topic | Title | Year | Authors | Paper | Code | Summary |
-| :--- | :--- | :---: | :--- | :---: | :---: | :--- |
-| 1. Оценка RAG | К вопросу о цифровых инструментах анализа СМИ стран Северо-Восточной Азии (**объект исследования**) | 2026 | Багров А. М., Иванченко Н. В., Костыркин А. В., Кудакаев Р. Ф., Маркин А. А., Мокрецкий А. Ч. | [DOI](https://doi.org/10.7868/S2712909826010109) | [GitHub](https://github.com/ivran-lab/chinese-media) | Предыдущая работа автора («Проблемы Дальнего Востока», 2026, № 1, с. 147–156). Описывает объект исследования — промышленную систему Dual-Source RAG (архив ИВ РАН в Qdrant и SearchAPI) для анализа китайскоязычных СМИ; количественной оценки качества ответов не содержит — именно эту нишу закрывает ВКР |
-| 1. Оценка RAG | Ragas: Automated Evaluation of Retrieval Augmented Generation | 2023 | Shahul Es et al. | [arXiv:2309.15217](https://arxiv.org/abs/2309.15217) | [GitHub](https://github.com/explodinggradients/ragas) | Reference-free метрики faithfulness, answer relevance, context relevance, не требующие эталонных ответов; базовое и конкурирующее семейство метрик для сопоставления с $`M`$ на эталонной выборке $`G`$. EACL 2024 (demo) |
-| 1. Оценка RAG | ARES: An Automated Evaluation Framework for Retrieval-Augmented Generation Systems | 2023 | Jon Saad-Falcon et al. | [arXiv:2311.09476](https://arxiv.org/abs/2311.09476) | [GitHub](https://github.com/stanford-futuredata/ARES) | Лёгкие модели-судьи, калиброванные по небольшой человеческой разметке с доверительными интервалами (prediction-powered inference); методологический аналог схемы «эталон + несколько разметчиков». NAACL 2024 |
-| 1. Оценка RAG | Benchmarking Large Language Models in Retrieval-Augmented Generation (RGB) | 2023 | Jiawei Chen et al. | [arXiv:2309.01431](https://arxiv.org/abs/2309.01431) | [GitHub](https://github.com/chen700564/RGB) | Двуязычный (zh + en) бенчмарк на новостях; четыре способности — устойчивость к шуму, отклонение нерелевантного контекста, интеграция информации, устойчивость к контрфактам — таксономия для новостного домена. AAAI 2024 |
-| 1. Оценка RAG | CRUD-RAG: A Comprehensive Chinese Benchmark for Retrieval-Augmented Generation of Large Language Models | 2024 | Yuanjie Lyu et al. | [arXiv:2401.17043](https://arxiv.org/abs/2401.17043) | [GitHub](https://github.com/IAAR-Shanghai/CRUD_RAG) | Китайский RAG-бенчмарк на новостных текстах; покомпонентный анализ влияния ретривера, длины контекста, базы знаний и модели на качество ответов |
-| 1. Оценка RAG | RAGTruth: A Hallucination Corpus for Developing Trustworthy Retrieval-Augmented Language Models | 2023 | Cheng Niu et al. | [arXiv:2401.00396](https://arxiv.org/abs/2401.00396) | [GitHub](https://github.com/ParticleMedia/RAGTruth) | Корпус галлюцинаций RAG с пословной человеческой разметкой — образец протокола аннотирования |
-| 1. Оценка RAG | RAGBench: Explainable Benchmark for Retrieval-Augmented Generation Systems | 2024 | Robert Friel et al. | [arXiv:2407.11005](https://arxiv.org/abs/2407.11005) | — | 100 тыс. примеров из пяти доменов; объяснимый фреймворк метрик TRACe (utilization, relevance, adherence, completeness) |
-| 1. Оценка RAG | Evaluating Retrieval Quality in Retrieval-Augmented Generation (eRAG) | 2024 | Alireza Salemi, Hamed Zamani | [arXiv:2404.13781](https://arxiv.org/abs/2404.13781) | [GitHub](https://github.com/alirezasalemi7/eRAG) | Оценка ретривера по влиянию каждого документа на итоговый ответ; корреляция с end-to-end качеством выше, чем у классических IR-метрик — аргумент за оценку компонента $`\rho`$ относительно $`S^*_i`$. SIGIR 2024 |
-| 1. Оценка RAG | Evaluation of Retrieval-Augmented Generation: A Survey | 2024 | Hao Yu et al. | [arXiv:2405.07437](https://arxiv.org/abs/2405.07437) | — | Канонический обзор оценки RAG (каркас RGAR: retrieval, generation, additional requirements) — основа структуры главы «Обзор» |
-| 1. Оценка RAG | Retrieval Augmented Generation Evaluation in the Era of Large Language Models: A Comprehensive Survey | 2025 | Aoran Gan et al. | [arXiv:2504.14891](https://arxiv.org/abs/2504.14891) | — | Наиболее свежий крупный обзор оценки RAG: систематизация метрик, бенчмарков и подходов с судьёй-LLM |
-| 1. Оценка RAG | RAGChecker: A Fine-grained Framework for Diagnosing Retrieval-Augmented Generation | 2024 | Dongyu Ru et al. | [arXiv:2408.08067](https://arxiv.org/abs/2408.08067) | [GitHub](https://github.com/amazon-science/RAGChecker) | Диагностика на уровне утверждений (claim-level): раздельные метрики ретривера и генератора, проверенные на согласие с людьми |
-| 1. Оценка RAG | CRAG — Comprehensive RAG Benchmark | 2024 | Xiao Yang et al. | [arXiv:2406.04744](https://arxiv.org/abs/2406.04744) | [GitHub](https://github.com/facebookresearch/CRAG) | 4409 пар вопрос–ответ; явное деление вопросов по темпу изменения фактов (static, slow-changing, fast-changing, real-time) — опора для предиката $`\mathrm{Inv}(q)`$ и статической выборки. NeurIPS 2024 D&B |
-| 1. Оценка RAG | MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries | 2024 | Yixuan Tang, Yi Yang | [arXiv:2401.15391](https://arxiv.org/abs/2401.15391) | [GitHub](https://github.com/yixuantt/MultiHop-RAG) | Бенчмарк многошаговых вопросов, построенный целиком на новостных статьях (en); методика построения вопросов по нескольким документам (поле `requires_multi_doc` эталонной выборки) |
-| 1. Оценка RAG | DomainRAG: A Chinese Benchmark for Evaluating Domain-specific Retrieval-Augmented Generation | 2024 | Shuting Wang et al. | [arXiv:2406.05654](https://arxiv.org/abs/2406.05654) | — | Китайский доменный RAG-бенчмарк; методика построения доменного набора вопросов и перечень проверяемых способностей |
-| 1. Оценка RAG | XRAG: Cross-lingual Retrieval-Augmented Generation | 2025 | Wei Liu et al. | [arXiv:2505.10089](https://arxiv.org/abs/2505.10089) | — | Кросс-языковой RAG: язык пользователя не совпадает с языком документов — наш случай (русский вопрос, китайские источники); протокол профессиональной верификации пар вопрос–ответ |
-| 1. Оценка RAG | Benchmarking LLM Faithfulness in RAG with Evolving Leaderboards (FaithJudge) | 2025 | Manveer Singh Tamber et al. | [arXiv:2505.04847](https://arxiv.org/abs/2505.04847) | — | Судья-LLM для галлюцинаций в RAG, опирающийся на человеческие аннотации, с обновляемым лидербордом. EMNLP 2025 Industry |
-| 1. Оценка RAG | RAG-Zeval: Towards Robust and Interpretable Evaluation on RAG Responses through End-to-End Rule-Guided Reasoning | 2025 | Kun Li et al. | [arXiv:2505.22430](https://arxiv.org/abs/2505.22430) | — | Компактный оценщик faithfulness и correctness, обученный с подкреплением по правилам, — вариант открытого судьи |
-| 1. Оценка RAG | Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks | 2020 | Patrick Lewis et al. | [arXiv:2005.11401](https://arxiv.org/abs/2005.11401) | — | Базовая работа о RAG (ретривер + генератор seq2seq). Единственная ссылка из статьи ПДВ 2026, переиспользуемая в обзоре методов. NeurIPS 2020, vol. 33, pp. 9459–9474 |
-| 1. Оценка RAG | Adaptive-RAG: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity | 2024 | Soyeong Jeong et al. | [arXiv:2403.14403](https://arxiv.org/abs/2403.14403) | [GitHub](https://github.com/starsuzi/Adaptive-RAG) | Польза поиска зависит от сложности вопроса; сравнение RAG-стратегий по F1 и времени — мотивация абляции $`f_0^{(m)}`$ против $`f_\rho^{(m)}`$. NAACL 2024 |
-| 1. Оценка RAG | A Survey on RAG Meeting LLMs: Towards Retrieval-Augmented Large Language Models | 2024 | Wenqi Fan et al. | [arXiv:2405.06211](https://arxiv.org/abs/2405.06211) | — | Общий обзор RAG для больших языковых моделей: архитектуры, обучение, приложения. KDD 2024 |
-| 2. LLM-судья | Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena | 2023 | Lianmin Zheng et al. | [arXiv:2306.05685](https://arxiv.org/abs/2306.05685) | [GitHub](https://github.com/lm-sys/FastChat) | Судья GPT-4 достигает более 80 % согласия с людьми — опорная величина для валидации судьи ($`H_4`$); описаны смещения судьи (позиция, многословность, самоусиление). NeurIPS 2023 D&B |
-| 2. LLM-судья | Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference | 2024 | Wei-Lin Chiang et al. | [arXiv:2403.04132](https://arxiv.org/abs/2403.04132) | [GitHub](https://github.com/lm-sys/FastChat) | Краудсорсинговые парные сравнения и рейтинги Bradley–Terry; статистические процедуры ранжирования систем |
-| 2. LLM-судья | G-Eval: NLG Evaluation using GPT-4 with Better Human Alignment | 2023 | Yang Liu et al. | [arXiv:2303.16634](https://arxiv.org/abs/2303.16634) | [GitHub](https://github.com/nlpyang/geval) | Оценка с цепочкой рассуждений и заполнением формы, взвешивание баллов по вероятностям — рецепт судейского промпта для $`m_J^{\text{corr}}`$ |
-| 2. LLM-судья | Prometheus: Inducing Fine-grained Evaluation Capability in Language Models | 2023 | Seungone Kim et al. | [arXiv:2310.08491](https://arxiv.org/abs/2310.08491) | [GitHub](https://github.com/prometheus-eval/prometheus-eval) | Открытый судья, обученный на пользовательских рубриках; альтернатива проприетарному судье. ICLR 2024 |
-| 2. LLM-судья | Prometheus 2: An Open Source Language Model Specialized in Evaluating Other Language Models | 2024 | Seungone Kim et al. | [arXiv:2405.01535](https://arxiv.org/abs/2405.01535) | [GitHub](https://github.com/prometheus-eval/prometheus-eval) | Объединяет прямую оценку по шкале и парные сравнения; открытая альтернатива проприетарному судье. EMNLP 2024 |
-| 2. LLM-судья | A Survey on LLM-as-a-Judge | 2024 | Jiawei Gu et al. | [arXiv:2411.15594](https://arxiv.org/abs/2411.15594) | — | Основной обзор направления «LLM как судья» и практические рекомендации по построению надёжного судьи |
-| 2. LLM-судья | JudgeBench: A Benchmark for Evaluating LLM-based Judges | 2024 | Sijun Tan et al. | [arXiv:2410.12784](https://arxiv.org/abs/2410.12784) | [GitHub](https://github.com/ScalerLab/JudgeBench) | Бенчмарк «оценщика оценщиков» — обоснование выбора модели-судьи. ICLR 2025 |
-| 2. LLM-судья | Large Language Models are not Fair Evaluators | 2023 | Peiyi Wang et al. | [arXiv:2305.17926](https://arxiv.org/abs/2305.17926) | [GitHub](https://github.com/i-Eval/FairEval) | Позиционное смещение при парном сравнении и его калибровка (перестановка позиций, balanced position calibration) |
-| 2. LLM-судья | Benchmarking Cognitive Biases in Large Language Models as Evaluators | 2023 | Ryan Koo et al. | [arXiv:2309.17012](https://arxiv.org/abs/2309.17012) | [GitHub](https://github.com/minnesotanlp/cobbler) | COBBLER: шесть когнитивных смещений судей (порядок, многословность, самопредпочтение и др.). ACL 2024 |
-| 2. LLM-судья | LLM Evaluators Recognize and Favor Their Own Generations | 2024 | Arjun Panickssery et al. | [arXiv:2404.13076](https://arxiv.org/abs/2404.13076) | — | Самопредпочтение (self-preference) судьи, связанное с самоузнаванием, — критично, когда генератор прод-системы и судья совпадают; обоснование ограничения на выбор судьи и гипотезы $`H_5`$ |
-| 2. LLM-судья | Justice or Prejudice? Quantifying Biases in LLM-as-a-Judge | 2024 | Jiayi Ye et al. | [arXiv:2410.02736](https://arxiv.org/abs/2410.02736) | — | Фреймворк CALM: количественная оценка 12 типов смещений судьи |
-| 2. LLM-судья | An Empirical Study of LLM-as-a-Judge: How Design Choices Impact Evaluation Reliability | 2025 | Yusuke Yamauchi et al. | [arXiv:2506.13639](https://arxiv.org/abs/2506.13639) | — | Чёткость критериев важнее размера судьи; Krippendorff $`\alpha`$ как мера согласованности; влияние проектных решений на надёжность оценки |
-| 2. LLM-судья | Potential and Perils of Large Language Models as Judges of Unstructured Textual Data | 2025 | Rewina Bedemariam et al. | [arXiv:2501.08167](https://arxiv.org/abs/2501.08167) | — | Сопоставление судьи с людьми через Cohen $`\kappa`$, Spearman $`\rho`$ и Krippendorff $`\alpha`$ — шаблон методики согласия для валидации подсемейства $`M'`$ |
-| 2. LLM-судья | Can LLMs Replace Human Evaluators? An Empirical Study of LLM-as-a-Judge in Software Engineering | 2025 | Ruiqi Wang et al. | [arXiv:2502.06193](https://arxiv.org/abs/2502.06193) | — | Ограничения замены людей судьёй в другом домене — контраргумент, обосновывающий обязательную человеческую валидацию. ISSTA 2025 |
-| 3. Временная динамика и выборки | FreshLLMs: Refreshing Large Language Models with Search Engine Augmentation (FreshQA) | 2023 | Tu Vu et al. | [arXiv:2310.03214](https://arxiv.org/abs/2310.03214) | [GitHub](https://github.com/freshllms/freshqa) | Таксономия вопросов never-changing / slow-changing / fast-changing / false-premise; эталонная выборка $`G`$ соответствует классу never-changing — центральное обоснование предиката $`\mathrm{Inv}(q)`$ и правил исключения $`E_1`$–$`E_5`$ |
-| 3. Временная динамика и выборки | RealTime QA: What's the Answer Right Now? | 2022 | Jungo Kasai et al. | [arXiv:2207.13332](https://arxiv.org/abs/2207.13332) | [GitHub](https://github.com/realtimeqa/realtimeqa_public) | Динамический QA с еженедельными новостными вопросами — противоположность статической выборке |
-| 3. Временная динамика и выборки | A Dataset for Answering Time-Sensitive Questions (TimeQA) | 2021 | Wenhu Chen et al. | [arXiv:2108.06314](https://arxiv.org/abs/2108.06314) | [GitHub](https://github.com/wenhuchen/Time-Sensitive-QA) | Разделение вопросов по временной чувствительности: ответ зависит от указанного момента — обоснование обязательной даты-якоря. NeurIPS 2021 D&B |
-| 3. Временная динамика и выборки | Time-Aware Language Models as Temporal Knowledge Bases (TempLAMA) | 2021 | Bhuwan Dhingra et al. | [arXiv:2106.15110](https://arxiv.org/abs/2106.15110) | — | Знания языковых моделей устаревают; темпоральный probing с привязкой к дате. TACL 2022 |
-| 3. Временная динамика и выборки | Let LLMs Take on the Latest Challenges! A Chinese Dynamic Question Answering Benchmark (CDQA) | 2024 | Zhikun Xu et al. | [arXiv:2402.19248](https://arxiv.org/abs/2402.19248) | — | Китайский динамический QA по свежим новостям; классификация вопросов по скорости изменения ответа — конкурирующий (динамический) датасет. COLING 2025 |
-| 3. Временная динамика и выборки | A Question Answering Dataset for Temporal-Sensitive Retrieval-Augmented Generation (ChronoQA) | 2025 | Ziyang Chen et al. | [arXiv:2508.12282](https://arxiv.org/abs/2508.12282) | — | Ближайший конкурент: 5176 вопросов по более чем 300 тыс. китайских новостей 2019–2024, валидация правилами, судьёй-LLM и людьми; все вопросы времязависимые — в отличие от $`G`$ |
-| 3. Временная динамика и выборки | Natural Questions: A Benchmark for Question Answering Research | 2019 | Tom Kwiatkowski et al. | [ACL](https://aclanthology.org/Q19-1026/) | [GitHub](https://github.com/google-research-datasets/natural-questions) | Протокол разметки: пятикратная разметка dev/test, 25-кратная на 302 примерах — опора для выбора числа аннотаторов $`R`$. TACL, vol. 7 |
-| 3. Временная динамика и выборки | TriviaQA: A Large Scale Distantly Supervised Challenge Dataset for Reading Comprehension | 2017 | Mandar Joshi et al. | [arXiv:1705.03551](https://arxiv.org/abs/1705.03551) | [GitHub](https://github.com/mandarjoshi90/triviaqa) | Distant supervision и верифицированное подмножество — схема «сгенерировано автоматически → верифицировано человеком». ACL 2017 |
-| 3. Временная динамика и выборки | Survey Article: Inter-Coder Agreement for Computational Linguistics | 2008 | Ron Artstein, Massimo Poesio | [ACL](https://aclanthology.org/J08-4004/) | — | Канонический разбор коэффициентов $`\kappa`$ и $`\alpha`$ в компьютерной лингвистике; интерпретация порогов согласия. Computational Linguistics 34(4) |
-| 3. Временная динамика и выборки | Computing Krippendorff's Alpha-Reliability | 2011 | Klaus Krippendorff | [PDF](https://www.asc.upenn.edu/sites/default/files/2021-03/Computing%20Krippendorff's%20Alpha-Reliability.pdf) | — | Первоисточник $`\alpha`$: любое число аннотаторов, пропуски, произвольная шкала; пороги 0.67 (допустимо) и 0.8 (надёжно) |
-| 3. Временная динамика и выборки | A Coefficient of Agreement for Nominal Scales | 1960 | Jacob Cohen | [DOI](https://doi.org/10.1177/001316446002000104) | — | Cohen $`\kappa`$ — согласие двух аннотаторов на номинальной шкале. Educational and Psychological Measurement 20(1) |
-| 3. Временная динамика и выборки | Measuring Nominal Scale Agreement Among Many Raters | 1971 | Joseph L. Fleiss | [DOI](https://doi.org/10.1037/h0031619) | — | Fleiss $`\kappa`$ — обобщение на более чем двух аннотаторов. Psychological Bulletin 76(5) |
-| 3. Временная динамика и выборки | Self-Instruct: Aligning Language Models with Self-Generated Instructions | 2022 | Yizhong Wang et al. | [arXiv:2212.10560](https://arxiv.org/abs/2212.10560) | [GitHub](https://github.com/yizhongw/self-instruct) | Генерация данных моделью с последующей фильтрацией — основа этапа черновиков $`g_{\text{draft}}`$. ACL 2023 |
-| 3. Временная динамика и выборки | RUST-BENCH: Benchmarking LLM Reasoning on Unstructured Text within Structured Tables | 2025 | — | [arXiv:2511.04491](https://arxiv.org/abs/2511.04491) | — | Конвейер «модель генерирует пары вопрос–ответ → верификация с участием человека» с ревью спорных случаев экспертами; авторы в источнике не указаны, метаданные проверены частично |
-| 4a. Ресурсы zh/ru | A Span-Extraction Dataset for Chinese Machine Reading Comprehension (CMRC 2018) | 2018 | Yiming Cui et al. | [arXiv:1810.07366](https://arxiv.org/abs/1810.07366) | [GitHub](https://github.com/ymcui/cmrc2018) | Китайский extractive-QA; EM/F1 с посимвольной токенизацией — адаптация метрик к китайскому. EMNLP 2019 |
-| 4a. Ресурсы zh/ru | DuReader: a Chinese Machine Reading Comprehension Dataset from Real-world Applications | 2017 | Wei He et al. | [arXiv:1711.05073](https://arxiv.org/abs/1711.05073) | [GitHub](https://github.com/baidu/DuReader) | Крупнейший «реальный» китайский MRC-датасет на шумном веб-контенте. ACL 2018 (MRQA) |
-| 4a. Ресурсы zh/ru | C-Eval: A Multi-Level Multi-Discipline Chinese Evaluation Suite for Foundation Models | 2023 | Yuzhen Huang et al. | [arXiv:2305.08322](https://arxiv.org/abs/2305.08322) | [GitHub](https://github.com/hkust-nlp/ceval) | Стандарт оценки китайских LLM — критерий отбора открытых бейзлайнов $`\mathcal{L}`$. NeurIPS 2023 |
-| 4a. Ресурсы zh/ru | CMMLU: Measuring massive multitask language understanding in Chinese | 2023 | Haonan Li et al. | [arXiv:2306.09212](https://arxiv.org/abs/2306.09212) | [GitHub](https://github.com/haonan-li/CMMLU) | Второй обязательный китайский бенчмарк знаний |
-| 4a. Ресурсы zh/ru | WebCPM: Interactive Web Search for Chinese Long-form Question Answering | 2023 | Yujia Qin et al. | [arXiv:2305.06849](https://arxiv.org/abs/2305.06849) | [GitHub](https://github.com/thunlp/WebCPM) | Китайский long-form QA с интерактивным веб-поиском — предшественник китайского RAG. ACL 2023 |
-| 4a. Ресурсы zh/ru | C-Pack: Packed Resources For General Chinese Embeddings | 2023 | Shitao Xiao et al. | [arXiv:2309.07597](https://arxiv.org/abs/2309.07597) | [GitHub](https://github.com/FlagOpen/FlagEmbedding) | C-MTEB и модели BGE — обоснование выбора эмбеддера для китайского корпуса. SIGIR 2024 |
-| 4a. Ресурсы zh/ru | XOR QA: Cross-lingual Open-Retrieval Question Answering | 2020 | Akari Asai et al. | [arXiv:2010.11856](https://arxiv.org/abs/2010.11856) | [GitHub](https://github.com/AkariAsai/XORQA) | Вопрос на одном языке, свидетельство на другом — формальная рамка языковой пары «русский вопрос — китайский источник». NAACL 2021 |
-| 4a. Ресурсы zh/ru | MKQA: A Linguistically Diverse Benchmark for Multilingual Open Domain Question Answering | 2020 | Shayne Longpre et al. | [arXiv:2007.15207](https://arxiv.org/abs/2007.15207) | [GitHub](https://github.com/apple/ml-mkqa) | 10 тыс. вопросов на 26 языках, включая китайский и русский; параллельные ответы |
-| 4a. Ресурсы zh/ru | MLQA: Evaluating Cross-lingual Extractive Question Answering | 2019 | Patrick Lewis et al. | [arXiv:1910.07475](https://arxiv.org/abs/1910.07475) | [GitHub](https://github.com/facebookresearch/MLQA) | Кросс-языковая оценка extractive QA; адаптация EM/F1 к разным языкам. ACL 2020 |
-| 4a. Ресурсы zh/ru | MERA: A Comprehensive LLM Evaluation in Russian | 2024 | Alena Fenogenova et al. | [arXiv:2401.04531](https://arxiv.org/abs/2401.04531) | [GitHub](https://github.com/ai-forever/MERA) | Главный русскоязычный бенчмарк LLM — позиционирование работы в российском контексте. ACL 2024 |
-| 4a. Ресурсы zh/ru | The Russian-focused embedders' exploration: ruMTEB benchmark and Russian embedding model design | 2024 | Artem Snegirev et al. | [arXiv:2408.12503](https://arxiv.org/abs/2408.12503) | — | 23 русскоязычные задачи оценки эмбеддингов; выбор эмбеддера для русской части. NAACL 2025 |
-| 4a. Ресурсы zh/ru | Building Russian Benchmark for Evaluation of Information Retrieval Models (RusBEIR) | 2025 | Grigory Kovalev et al. | [arXiv:2504.12879](https://arxiv.org/abs/2504.12879) | — | 17 датасетов zero-shot IR на русском; BM25 остаётся сильным бейзлайном |
-| 4a. Ресурсы zh/ru | Wikipedia-based Datasets in Russian Information Retrieval Benchmark RusBEIR | 2025 | Grigory Kovalev et al. | [arXiv:2511.05079](https://arxiv.org/abs/2511.05079) | — | Расширение RusBEIR задачами fact-checking и RAG на данных Википедии |
-| 4b. Метрики | SQuAD: 100,000+ Questions for Machine Comprehension of Text | 2016 | Pranav Rajpurkar et al. | [arXiv:1606.05250](https://arxiv.org/abs/1606.05250) | — | Первоисточник метрик Exact Match и токенного F1, входящих в $`M`$. EMNLP 2016 |
-| 4b. Метрики | Bleu: a Method for Automatic Evaluation of Machine Translation | 2002 | Kishore Papineni et al. | [ACL](https://aclanthology.org/P02-1040/) | — | Канон n-граммных метрик; объект критики применительно к китайскому тексту и транслитерациям имён |
-| 4b. Метрики | ROUGE: A Package for Automatic Evaluation of Summaries | 2004 | Chin-Yew Lin | [ACL](https://aclanthology.org/W04-1013/) | — | Recall-ориентированные n-граммные метрики для сопоставления с эталоном |
-| 4b. Метрики | BERTScore: Evaluating Text Generation with BERT | 2019 | Tianyi Zhang et al. | [arXiv:1904.09675](https://arxiv.org/abs/1904.09675) | [GitHub](https://github.com/Tiiiger/bert_score) | Семантическое сопоставление контекстных эмбеддингов вместо точного совпадения; BERTScore-F1 с мультиязычным энкодером входит в $`M`$. ICLR 2020 |
-| 4b. Метрики | FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation | 2023 | Sewon Min et al. | [arXiv:2305.14251](https://arxiv.org/abs/2305.14251) | [GitHub](https://github.com/shmsw25/FActScore) | Декомпозиция ответа на атомарные факты и проверка каждого по источнику знаний. EMNLP 2023 |
-| 4b. Метрики | Evaluating the Factual Consistency of Abstractive Text Summarization (FactCC) | 2019 | Wojciech Kryściński et al. | [arXiv:1910.12840](https://arxiv.org/abs/1910.12840) | [GitHub](https://github.com/salesforce/factCC) | NLI-классификатор фактической согласованности текста с источником |
-| 4b. Метрики | Asking and Answering Questions to Evaluate the Factual Consistency of Summaries (QAGS) | 2020 | Alex Wang, Kyunghyun Cho, Mike Lewis | [arXiv:2004.04228](https://arxiv.org/abs/2004.04228) | [GitHub](https://github.com/W4ngatang/qags) | Проверка согласованности через генерацию вопросов и ответы на них — предок метрики faithfulness в RAGAS. ACL 2020 |
-| 4b. Метрики | SummaC: Re-Visiting NLI-based Models for Inconsistency Detection in Summarization | 2021 | Philippe Laban et al. | [arXiv:2111.09525](https://arxiv.org/abs/2111.09525) | [GitHub](https://github.com/tingofurro/summac) | Пофразовая NLI-агрегация; дешёвый детектор несогласованности — кандидат для вычисления $`\mathrm{CP}_{\text{ent}}`$. TACL |
-| 4b. Метрики | Enabling Large Language Models to Generate Text with Citations (ALCE) | 2023 | Tianyu Gao et al. | [arXiv:2305.14627](https://arxiv.org/abs/2305.14627) | [GitHub](https://github.com/princeton-nlp/ALCE) | Метрики citation precision и citation recall через NLI — основа метрик цитирования $`\mathrm{CP}`$ и $`\mathrm{CR}`$. EMNLP 2023 |
-| 4b. Метрики | Measuring Attribution in Natural Language Generation Models (AIS) | 2021 | Hannah Rashkin et al. | [arXiv:2112.12870](https://arxiv.org/abs/2112.12870) | — | Рамка Attributable to Identified Sources и человеческий протокол оценки атрибуции. Computational Linguistics |
-| 4b. Метрики | A review of faithfulness metrics for hallucination assessment in Large Language Models | 2024 | Ben Malin et al. | [arXiv:2501.00269](https://arxiv.org/abs/2501.00269) | — | Систематический обзор faithfulness-метрик для оценки галлюцинаций. IEEE JSTSP 2025 |
-| 4c. Модели | Qwen2.5 Technical Report | 2024 | Qwen Team | [arXiv:2412.15115](https://arxiv.org/abs/2412.15115) | [GitHub](https://github.com/QwenLM/Qwen2.5) | Китайское семейство открытых моделей предыдущего поколения |
-| 4c. Модели | Qwen3 Technical Report | 2025 | Qwen Team | [arXiv:2505.09388](https://arxiv.org/abs/2505.09388) | [GitHub](https://github.com/QwenLM/Qwen3) | Актуальное поколение; кандидаты в открытые бейзлайны $`\mathcal{L}`$ (у провайдера ИВ РАН — Qwen3.6-27B, Qwen3.8-27B) |
-| 4c. Модели | DeepSeek-V3 Technical Report | 2024 | DeepSeek-AI | [arXiv:2412.19437](https://arxiv.org/abs/2412.19437) | [GitHub](https://github.com/deepseek-ai/DeepSeek-V3) | MoE-модель на 671 млрд параметров |
-| 4c. Модели | DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning | 2025 | DeepSeek-AI | [arXiv:2501.12948](https://arxiv.org/abs/2501.12948) | [GitHub](https://github.com/deepseek-ai/DeepSeek-R1) | Reasoning-модель; дистиллят DeepSeek-R1-Distill-Qwen-32B фактически обслуживает прод-систему $`f_{\text{prod}}`$ — источник риска самопредпочтения судьи |
-| 4c. Модели | The Llama 3 Herd of Models | 2024 | Meta | [arXiv:2407.21783](https://arxiv.org/abs/2407.21783) | [GitHub](https://github.com/meta-llama/llama3) | Западный бейзлайн, слабее на китайском |
-| 4c. Модели | Llama 4 (Scout, Maverick) | 2025 | Meta | [web](https://www.llama.com/) | — | UNVERIFIED: рецензируемой публикации нет, только блог и model card; цитируется как web-источник |
-| 4c. Модели | ChatGLM: A Family of Large Language Models from GLM-130B to GLM-4 All Tools | 2024 | GLM Team | [arXiv:2406.12793](https://arxiv.org/abs/2406.12793) | [GitHub](https://github.com/THUDM/GLM-4) | Китайская альтернатива Qwen (у провайдера — GLM-4.1V-9B-Thinking) |
-| 4c. Модели | GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models | 2025 | GLM Team | [arXiv:2508.06471](https://arxiv.org/abs/2508.06471) | [GitHub](https://github.com/zai-org/GLM-4.5) | Свежий китайский флагман |
-| 4c. Модели | Yi: Open Foundation Models by 01.AI | 2024 | 01.AI | [arXiv:2403.04652](https://arxiv.org/abs/2403.04652) | [GitHub](https://github.com/01-ai/Yi) | Билингвальное (zh/en) семейство 6B–34B |
-| 4c. Модели | Gemma 3 Technical Report | 2025 | Gemma Team | [arXiv:2503.19786](https://arxiv.org/abs/2503.19786) | [GitHub](https://github.com/google-deepmind/gemma) | Лёгкие открытые модели с длинным контекстом |
-| 4c. Модели | Mistral 7B | 2023 | Mistral AI | [arXiv:2310.06825](https://arxiv.org/abs/2310.06825) | [GitHub](https://github.com/mistralai/mistral-inference) | Компактный бейзлайн; нижняя граница качества по китайскому |
-| 4c. Модели | GigaChat Family: Efficient Russian Language Modeling Through Mixture of Experts Architecture | 2025 | GigaChat team | [arXiv:2506.09440](https://arxiv.org/abs/2506.09440) | [GitHub](https://github.com/salute-developers/GigaChat) | Российский флагман с публикацией (у провайдера — GigaChat-20B-A3B). ACL 2025 Demo |
-| 4c. Модели | Vikhr: The Family of Open-Source Instruction-Tuned Large Language Models for Russian | 2024 | Aleksandr Nikolich et al. | [arXiv:2405.13929](https://arxiv.org/abs/2405.13929) | — | Открытые русскоязычные instruction-tuned модели |
-| 4c. Модели | YandexGPT 5 (Pro / Lite) | 2025 | Яндекс | [web](https://habr.com/ru/companies/yandex/articles/885218/) | — | UNVERIFIED: рецензируемой публикации нет, только блог; исторически генератор прод-системы (по презентации 2025 года); цитируется как web-источник |
+**Методологические положения постановки**, к которым тоже выносится вердикт: $`П_1`$ — ограничение статическими вопросами делает выборку долговечной, а расхождение с эталоном — интерпретируемым; $`П_2`$ — трёх независимых аннотаторов и порога $`\alpha \ge 0.67`$ достаточно для надёжной выборки; $`П_3`$ — метрики точного совпадения, F1 и BERTScore недостаточны для развёрнутых ответов, нужен судья по эталону $`m_J^{\text{corr}}`$; $`П_4`$ — метрики цитирования $`\mathrm{CP}`$, $`\mathrm{CR}`$ (по идентификаторам и через NLI) валидны; $`П_5`$ — нужны метрики отказов и вопросы $`G^{\varnothing}`$ с правильным ответом-отказом; $`П_6`$ — метрики поиска относительно $`S^*_i`$ согласуются с итоговым качеством ответа; $`П_7`$ — судья валидируется по людям раздельно на надёжность (воспроизводимость) и валидность (корреляция с людьми); $`П_8`$ — парный бутстреп, критерий Уилкоксона с поправкой Холма и $`\delta`$ Клиффа уместны при $`n \approx 200`$; $`П_9`$ — судья должен быть вне множества оцениваемых моделей.
+
+**Верификация.** Каждая позиция подтверждена записью открытого API (arXiv, Crossref, ACL Anthology, OpenAlex, Open Library) по состоянию на 24 сентября 2026 года: название, авторы, год и ссылка взяты из ответа API, вердикт вынесен по аннотации (для ключевых работ — по тексту введения и выводов). Протокол отбора и верификации — [ADR-015](docs/decisions.md#adr-015-критерии-отбора-литературы-и-протокол-верификации-ссылок). Позиции внутри блока упорядочены хронологически; нумерация сквозная. Технические отчёты моделей вынесены в приложение и в счётчики не входят.
+
+## Сводка
+
+| Блок | до 2000 | 2000–2024 | 2025–2026 | Всего |
+|---|---:|---:|---:|---:|
+| 1. Оценка систем с поиском и вопросно-ответных систем; основы IR и QA | 6 | 15 | 12 | 33 |
+| 2. Большие языковые модели в роли судьи | 0 | 12 | 19 | 31 |
+| 3. Временная динамика вопросов, эталонные выборки, согласие аннотаторов | 10 | 15 | 15 | 40 |
+| 4. Китайско- и русскоязычные ресурсы, кросс-языковой поиск, метрики генерации и цитирования | 0 | 19 | 11 | 30 |
+| 5. Статистика сравнения систем и надёжность оценки | 6 | 3 | 2 | 11 |
+| **Всего** | **22** | **64** | **59** | **145** |
+
+## 1. Оценка систем с поиском и вопросно-ответных систем; основы IR и QA
+
+**1. The Cranfield Tests on Index Language Devices** — Cyril Cleverdon, 1967, Aslib Proceedings. [DOI](https://doi.org/10.1108/eb050097)  
+Суть: Крэнфилдские эксперименты Кливердона заложили парадигму тестовой коллекции: фиксированный корпус, набор запросов и эталонные оценки релевантности, по которым сравниваются системы; сама статья сравнивает устройства индексного языка и находит, что специфичность терминов важнее всего. Именно по этой схеме устроена эталонная выборка G с опорными документами S*_i.  
+Вердикт: поддерживает П1 (замороженная коллекция с фиксированными запросами и эталонными оценками релевантности делает сравнение систем воспроизводимым); нейтрально П6 (фон: методика подсчёта метрик поиска относительно фиксированного множества релевантных документов; о связи с качеством ответа работа не говорит).  
+Где пригодится: Обзор §2.1: основы оценки поиска; Постановка: эталонная выборка как тестовая коллекция.
+
+**2. A vector space model for automatic indexing** — G. Salton, A. Wong, C. S. Yang, 1975, Communications of the ACM. [DOI](https://doi.org/10.1145/361219.361220)  
+Суть: Векторная модель Солтона, Вонга и Яна представляет документы и запросы векторами в пространстве терминов и использует косинусную близость как меру соответствия, связывая качество поиска с плотностью пространства; плотный ретривер ρ_prod (Qdrant) наследует ту же идею ранжирования по близости векторов, что важно для интерпретации метрик поиска относительно S*_i.  
+Вердикт: уточняет П6 (косинусная близость измеряет сходство представлений, а не подтверждение ответа документом); нейтрально H3 (фон: механизм ранжирования в ретривере ρ_prod).  
+Где пригодится: Обзор §2.1: основы поиска; Обсуждение: природа дефектов ретривера.
+
+**3. Relevance: A Review of and a Framework for the Thinking on the Notion in Information Science** — Tefko Saracevic, 1975, Journal of the American Society for Information Science. [DOI](https://doi.org/10.1002/asi.4630260604)  
+Суть: Обзор Сарацевича систематизирует релевантность как человеческое, неоднозначное понятие, по-разному трактуемое на разных этапах коммуникации знания и образующее взаимосвязанные «системы релевантности» — теоретическое основание того, что отвечаемость и опорные документы в G размечаются несколькими людьми, а их согласие измеряется.  
+Вердикт: уточняет П2 (релевантность — человеческое, неоднозначное понятие, поэтому расхождения аннотаторов ожидаемы и согласие нужно измерять; о достаточности трёх аннотаторов и порога α работа не говорит); уточняет П6 (релевантность документа системе не тождественна его полезности (пертинентности) для пользователя и ответа).  
+Где пригодится: Обзор §2.1: понятие релевантности; Данные: инструкция разметки опорных документов.
+
+**4. Information Retrieval Test Collections** — Karen Spärck Jones, C. J. van Rijsbergen, 1976, Journal of Documentation. [DOI](https://doi.org/10.1108/eb026616)  
+Суть: Спарк Джоунз и ван Рейсберген разбирают недостатки прошлых тестовых коллекций IR и формулируют требования к «идеальной» коллекции: репрезентативные запросы, полнота и документирование оценок релевантности, пригодность для повторных экспериментов. Это методологическая основа для построения эталона G и множеств S*_i как многократно используемой тестовой коллекции.  
+Вердикт: поддерживает П1 (тестовая коллекция задумана как многократно используемая для сравнения систем во времени — аргумент за долговечный статический эталон); уточняет П6 (неполнота оценок релевантности в коллекции — известное ограничение, влияющее на Recall@k и nDCG@k относительно S*_i).  
+Где пригодится: Постановка: ограничения на выборку; Данные: описание версии v1.0.
+
+**5. MURAX: A Robust Linguistic Approach for Question Answering Using an On-Line Encyclopedia** — Julian Kupiec, 1993, SIGIR 1993. [DOI](https://doi.org/10.1145/160688.160717)  
+Суть: MURAX Купьеца — вопросно-ответная система над онлайн-энциклопедией, соединяющая поиск по корпусу с лингвистической проверкой кандидатов; ранний прообраз конвейера «ретривер + генератор» и аргумент, что поиск по корпусу повышает точность ответов.  
+Вердикт: нейтрально H1 (исторический предшественник конвейера «ретривер + генератор»); нейтрально H3 (система использует поиск по корпусу, но не сравнивается с ответами без поиска — аргумента за H3 нет).  
+Где пригодится: Обзор §2.1: история QA.
+
+**6. The TREC-8 Question Answering Track Evaluation** — Ellen M. Voorhees, Dawn M. Tice, 1999, TREC-8, NIST Special Publication 500-246. [DOI](https://doi.org/10.6028/nist.sp.500-246.qa-overview)  
+Суть: Отчёт о первом QA-треке TREC: фактоидные вопросы по фиксированному корпусу, короткие ответы (до 5 ранжированных строк), ручная проверка асессорами и метрика Mean Reciprocal Rank — первоисточник MRR и протокола оценки QA-систем. Авторы не нашли серьёзных изъянов в методологии, но отмечают, что задачу стоит приблизить к реальной пользовательской.  
+Вердикт: уточняет П1 (фиксированный корпус и закрытые фактоидные вопросы дают воспроизводимый эталон, но авторы предлагают переопределить задачу ближе к реальной пользовательской); уточняет П3 (правильность ответов определяли асессоры-люди; изучено влияние методологии (в т.ч. расхождений асессоров) на сравнение систем — «серьёзных изъянов не выявлено»); нейтрально П6 (первоисточник MRR; в треке она считалась по ранжированным строкам ответов, а не по найденным документам).  
+Где пригодится: Обзор §2.1: оценка QA; Метод (этап 6): метрики поиска.
+
+**7. Cumulated gain-based evaluation of IR techniques** — Kalervo Järvelin, Jaana Kekäläinen, 2002, ACM Transactions on Information Systems. [DOI](https://doi.org/10.1145/582415.582418)  
+Суть: Ярвелин и Кекяляйнен вводят кумулятивный и дисконтированный выигрыш (CG, DCG, nDCG): оценку ранжирования с учётом позиции документа и градуированной релевантности, нормированную на идеальный список — первоисточник nDCG@k относительно S*_i в семействе метрик поиска.  
+Вердикт: уточняет П6 (nDCG@k требует градуированных оценок релевантности и нормировки на идеальное ранжирование (S*_i); дисконт снижает вклад поздно найденных документов; связь с итоговым качеством ответа в работе не исследуется); нейтрально П8 (фон: авторы отмечают, что предложенные меры допускают проверку статистической значимости различий систем).  
+Где пригодится: Метод (этап 6): метрики поиска; Обзор §2.1.
+
+**8. The Probabilistic Relevance Framework: BM25 and Beyond** — Stephen Robertson, Hugo Zaragoza, 2009, Foundations and Trends® in Information Retrieval. [DOI](https://doi.org/10.1561/1500000019)  
+Суть: Робертсон и Сарагоса излагают вероятностную модель релевантности (PRF) и выведенные из неё алгоритмы ранжирования, включая BM25 и BM25F, — классический лексический ретривер, естественный бейзлайн и альтернатива плотному поиску Qdrant в f_prod.  
+Вердикт: нейтрально H3 (фон: лексическая модель ранжирования BM25 как классический бейзлайн ретривера; о вкладе поиска в качество генерации работа не говорит); нейтрально П6 (фон: модель ранжирования с свободными параметрами, требующими настройки).  
+Где пригодится: Обзор §2.1; Обсуждение: ретривер.
+
+**9. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks** — Patrick Lewis et al., 2020, Advances in Neural Information Processing Systems 33 (NeurIPS 2020). [arXiv:2005.11401](https://arxiv.org/abs/2005.11401)  
+Суть: Базовая работа о RAG: генератор seq2seq поверх плотного ретривера; показано, что дополнение поиском повышает точность на знаниеёмких задачах — исходная мотивация абляции «с поиском / без поиска».  
+Вердикт: поддерживает H1 (поиск по корпусу как источник фактов); поддерживает H3 (RAG превосходит параметрические модели на знаниеёмких задачах).  
+Где пригодится: Введение; Обзор §2.1.
+
+**10. Benchmarking Large Language Models in Retrieval-Augmented Generation** — Jiawei Chen et al., 2023, AAAI 2024. [arXiv:2309.01431](https://arxiv.org/abs/2309.01431) · [DOI](https://doi.org/10.1609/aaai.v38i16.29728) · [код](https://github.com/chen700564/RGB)  
+Суть: RGB — двуязычный (zh/en) бенчмарк RAG, построенный по свежим новостям, с четырьмя тестбедами: устойчивость к шуму, отклонение при отсутствии нужной информации, интеграция информации, устойчивость к контрфактам; 6 LLM показали слабость в трёх последних.  
+Вердикт: поддерживает П5 (отклонение ответа при отсутствии нужной информации в контексте (negative rejection) выделено как отдельная измеряемая способность, с которой LLM справляются плохо); уточняет H3 (выигрыш от поиска зависит от устойчивости конкретной модели к шуму и ложной информации в контексте, поэтому H3 нужно проверять по каждой модели отдельно); уточняет П1 (вопросы RGB привязаны к свежим новостям момента сбора и к фиксированным наборам документов, а не к постоянному корпусу, поэтому выборка устаревает; G строится иначе — по статическим вопросам).  
+Где пригодится: Обзор §2.1; Постановка: чем G отличается от RGB.
+
+**11. Ragas: Automated Evaluation of Retrieval Augmented Generation** — Shahul Es et al., 2023, EACL 2024 (demo). [arXiv:2309.15217](https://arxiv.org/abs/2309.15217) · [DOI](https://doi.org/10.18653/v1/2024.eacl-demo.16) · [код](https://github.com/explodinggradients/ragas)  
+Суть: RAGAS — безэталонные метрики faithfulness, answer relevance и context relevance, вычисляемые LLM без эталонных ответов и без разметки; конкурирующее семейство, с которым сопоставляются метрики M на выборке G.  
+Вердикт: уточняет П3 (безэталонная LLM-оценка измеряет верность ответа контексту и релевантность, а не правильность относительно эталона, поэтому дополняет, а не заменяет судью по эталону m_J^corr); уточняет П7 (даже безэталонные LLM-метрики авторы проверяли по согласию с людьми, но только на англоязычном WikiEval; перенос на русскоязычные ответы требует собственной валидации).  
+Где пригодится: Обзор §2.1; Эксперименты: конкурирующие метрики.
+
+**12. ARES: An Automated Evaluation Framework for Retrieval-Augmented Generation Systems** — Jon Saad-Falcon et al., 2023, NAACL 2024. [arXiv:2311.09476](https://arxiv.org/abs/2311.09476) · [DOI](https://doi.org/10.18653/v1/2024.naacl-long.20) · [код](https://github.com/stanford-futuredata/ARES)  
+Суть: ARES обучает лёгкие модели-судьи на синтетических данных и калибрует их по небольшой человеческой разметке методом prediction-powered inference с доверительными интервалами.  
+Вердикт: поддерживает П7 (калибровка судьи по человеческой подвыборке с интервалами); уточняет П8 (PPI как альтернатива бутстрепу при малой размеченной подвыборке).  
+Где пригодится: Обзор §2.1; Метод (этап 7).
+
+**13. RAGTruth: A Hallucination Corpus for Developing Trustworthy Retrieval-Augmented Language Models** — Cheng Niu et al., 2023, arXiv preprint (v1 31.12.2023); ACL 2024. [arXiv:2401.00396](https://arxiv.org/abs/2401.00396) · [код](https://github.com/ParticleMedia/RAGTruth)  
+Суть: RAGTruth — корпус из ~18 тыс. RAG-ответов разных LLM с ручной разметкой галлюцинаций на уровне случаев и слов (с оценкой интенсивности); на нём сравниваются методы детекции галлюцинаций и показано, что дообученная небольшая модель сопоставима с prompt-based детекторами на GPT-4.  
+Вердикт: поддерживает П7 (методы автоматической детекции оцениваются относительно человеческой разметки корпуса, а не принимаются на веру); уточняет П4 (неподдержанность ответа контекстом размечается людьми на уровне спанов, но качество автоматических детекторов различается — CP_ent через NLI требует проверки на размеченных данных).  
+Где пригодится: Обзор §2.1; Метод (этап 6).
+
+**14. MultiHop-RAG: Benchmarking Retrieval-Augmented Generation for Multi-Hop Queries** — Yixuan Tang, Yi Yang, 2024, COLM 2024. [arXiv:2401.15391](https://arxiv.org/abs/2401.15391) · [код](https://github.com/yixuantt/MultiHop-RAG)  
+Суть: MultiHop-RAG — бенчмарк многошаговых вопросов по англоязычным новостным статьям: база знаний, вопросы, эталонные ответы и опорные свидетельства; отдельно оцениваются ретривер (эмбеддинги) и генератор (GPT-4, PaLM, Llama2-70B), оба показывают неудовлетворительные результаты.  
+Вердикт: поддерживает П6 (для каждого вопроса заданы эталонные опорные свидетельства, и качество ретривера (сравнение эмбеддингов) оценивается по ним отдельно от качества ответа LLM); нейтрально П1 (вопросы строятся по новостному корпусу с несколькими опорными документами; долговечность вопросов во времени не исследуется).  
+Где пригодится: Обзор §2.1; Данные: схема выборки.
+
+**15. CRUD-RAG: A Comprehensive Chinese Benchmark for Retrieval-Augmented Generation of Large Language Models** — Yuanjie Lyu et al., 2024, arXiv preprint (Jan 2024); ACM TOIS 2025. [arXiv:2401.17043](https://arxiv.org/abs/2401.17043) · [DOI](https://doi.org/10.1145/3701228) · [код](https://github.com/IAAR-Shanghai/CRUD_RAG)  
+Суть: CRUD-RAG — китайский бенчмарк RAG на новостных текстах по операциям create/read/update/delete с покомпонентным анализом влияния ретривера, длины контекста, базы знаний и модели.  
+Вердикт: уточняет H2 (качество RAG зависит и от ретривера, и от базы знаний, и от генератора — мотивация абляции с общим ретривером против f_prod); нейтрально П1 (бенчмарк оценивает сценарии применения RAG, вопрос долговечности/статичности эталонных вопросов не рассматривается — фон).  
+Где пригодится: Обзор §2.1; Постановка.
+
+**16. Evaluating Retrieval Quality in Retrieval-Augmented Generation** — Alireza Salemi, Hamed Zamani, 2024, SIGIR 2024. [arXiv:2404.13781](https://arxiv.org/abs/2404.13781) · [DOI](https://doi.org/10.1145/3626772.3657957) · [код](https://github.com/alirezasalemi7/eRAG)  
+Суть: eRAG оценивает ретривер по влиянию каждого документа на итоговый ответ и показывает, что такая оценка коррелирует с end-to-end качеством сильнее классических IR-метрик.  
+Вердикт: опровергает П6 (оценка ретривера по меткам релевантности запрос–документ (аналог S*_i) показывает малую корреляцию с итоговым качеством RAG; полезность документа для генератора (eRAG) коррелирует сильнее (прирост Kendall τ 0.168–0.494)).  
+Где пригодится: Обзор §2.1; Метод (этап 6): метрики поиска; Обсуждение.
+
+**17. Evaluation of Retrieval-Augmented Generation: A Survey** — Hao Yu et al., 2024, CCF BigData 2024 (Springer CCIS); arXiv preprint 2405.07437. [arXiv:2405.07437](https://arxiv.org/abs/2405.07437) · [DOI](https://doi.org/10.1007/978-981-96-1024-2_8)  
+Суть: Обзор оценки RAG с единым процессом Auepora и каркасом RGAR (retrieval, generation, additional requirements): систематизация целей, метрик (relevance, accuracy, faithfulness) и наборов данных, обсуждение ограничений бенчмарков.  
+Вердикт: поддерживает П1 (зависимость RAG от динамических источников знаний названа отдельным вызовом оценки, что мотивирует фиксацию долговечной статической выборки G); нейтрально П6 (метрики ретривера и генератора систематизированы как отдельные компоненты; о согласии метрик поиска с итоговым качеством аннотация не говорит).  
+Где пригодится: Обзор §2.1: структура главы.
+
+**18. CRAG -- Comprehensive RAG Benchmark** — Xiao Yang et al., 2024, NeurIPS 2024 D&B. [arXiv:2406.04744](https://arxiv.org/abs/2406.04744) · [код](https://github.com/facebookresearch/CRAG)  
+Суть: CRAG — 4409 пар вопрос–ответ по пяти доменам с делением по динамике фактов (от real-time до static) и оценкой, различающей верный ответ, отказ и галлюцинацию; лучшие LLM дают ≤34% точности, простой RAG — 44%, промышленные RAG — 63% без галлюцинаций.  
+Вердикт: поддерживает П5 (оценка различает верный ответ, отказ и галлюцинацию; галлюцинация штрафуется сильнее отказа, что требует учёта отказов); уточняет П1 (вопросы делятся по динамике фактов (real-time, fast-changing, slow-changing, static); точность заметно ниже на динамичных фактах, поэтому долговечность эталона зависит от класса вопроса).  
+Где пригодится: Обзор §2.1; Постановка: предикат Inv(q).
+
+**19. DomainRAG: A Chinese Benchmark for Evaluating Domain-specific Retrieval-Augmented Generation** — Shuting Wang et al., 2024, arXiv preprint. [arXiv:2406.05654](https://arxiv.org/abs/2406.05654)  
+Суть: DomainRAG — китайский доменный бенчмарк RAG (приём в вузы) с шестью проверяемыми способностями: диалоговый RAG, структурная информация, верность внешним знаниям, устойчивость к шуму, время-чувствительные вопросы, многодокументные взаимодействия; closed-book LLM плохо справляются с доменными вопросами.  
+Вердикт: поддерживает H3 (closed-book модели (Llama, Baichuan, ChatGLM, GPT) плохо справляются с доменными вопросами, что показывает необходимость поиска для решения экспертных задач); уточняет П1 (среди шести проверяемых способностей выделено решение время-чувствительных вопросов по общему корпусу — динамика фактов тестируется как отдельная способность, а не исключается из выборки).  
+Где пригодится: Обзор §2.1; Обзор §2.4.
+
+**20. RAGBench: Explainable Benchmark for Retrieval-Augmented Generation Systems** — Robert Friel, Masha Belyi, Atindriyo Sanyal, 2024, arXiv preprint. [arXiv:2407.11005](https://arxiv.org/abs/2407.11005)  
+Суть: RAGBench — 100 тыс. примеров из пяти отраслевых доменов и объяснимый фреймворк TRACe (utilization, relevance, adherence, completeness); показано, что LLM-судьи уступают дообученной RoBERTa на задаче оценки RAG.  
+Вердикт: уточняет П3 (полнота и следование контексту выделены как отдельные измерения сверх совпадения с эталоном, но они считаются относительно контекста, а LLM-судья на них не лучший измеритель); уточняет П7 (LLM-судья проигрывает дообученному детектору на размеченных данных — судью нужно валидировать по людям, а не принимать по умолчанию).  
+Где пригодится: Обзор §2.1; Метод (этап 6).
+
+**21. RAGChecker: A Fine-grained Framework for Diagnosing Retrieval-Augmented Generation** — Dongyu Ru et al., 2024, NeurIPS 2024 (Datasets and Benchmarks Track). [arXiv:2408.08067](https://arxiv.org/abs/2408.08067) · [DOI](https://doi.org/10.52202/079017-0692) · [код](https://github.com/amazon-science/RAGChecker)  
+Суть: RAGChecker — диагностика на уровне утверждений с раздельными метриками ретривера и генератора, валидированная по согласию с людьми.  
+Вердикт: поддерживает П3 (claim-level метрики точнее ответных); поддерживает П7 (метрики проверены на корреляцию с человеческими оценками).  
+Где пригодится: Обзор §2.1; Метод (этап 6).
+
+**22. Worse than Zero-shot? A Fact-Checking Dataset for Evaluating the Robustness of RAG Against Misleading Retrievals** — Linda Zeng et al., 2025, arXiv preprint. [arXiv:2502.16101](https://arxiv.org/abs/2502.16101)  
+Суть: RAGuard — бенчмарк устойчивости RAG к вводящей в заблуждение выдаче из реальных политических дискуссий (Reddit; типы свидетельств: поддерживающие, вводящие в заблуждение, нерелевантные): при таких документах все проверенные RAG-системы отвечают хуже, чем те же модели без поиска, тогда как люди — лучше.  
+Вердикт: опровергает H3 (при вводящих в заблуждение документах поиск снижает точность всех проверенных систем ниже zero-shot); уточняет H1 (превосходство f_prod над моделями без поиска зависит от качества выдачи: при ложном контексте эффект поиска обращается); уточняет П5 (устойчивость к ложному или противоречивому контексту — смежная с отказами характеристика, не покрываемая вопросами G^∅; об отказах работа не говорит).  
+Где пригодится: Обзор §2.1; Обсуждение: когда поиск вредит.
+
+**23. Real-Time Evaluation Models for RAG: Who Detects Hallucinations Best?** — Ashish Sardana, 2025, arXiv preprint. [arXiv:2503.21157](https://arxiv.org/abs/2503.21157)  
+Суть: Обзор и бенчмарк безэталонных детекторов галлюцинаций в RAG (LLM-судья, Prometheus, Lynx, HHEM, TLM) на шести RAG-приложениях: часть подходов стабильно выявляет неверные ответы с высокой точностью и полнотой без эталонных ответов.  
+Вердикт: поддерживает П7 (детекторы ошибок сравниваются между собой по precision/recall на размеченных ответах — судью выбирают по мета-оценке, а не по умолчанию); уточняет П3 (существуют безэталонные детекторы (без ground-truth), стабильно ловящие неверные ответы RAG, — судья по эталону m_J^corr не единственный способ оценки развёрнутых ответей; детекторы измеряют корректность относительно контекста, а не эталона).  
+Где пригодится: Обзор §2.1; Метод (этап 7): выбор судьи.
+
+**24. Retrieval Augmented Generation Evaluation in the Era of Large Language Models: A Comprehensive Survey** — Aoran Gan et al., 2025, arXiv preprint. [arXiv:2504.14891](https://arxiv.org/abs/2504.14891)  
+Суть: Обзор методов оценки RAG в эпоху LLM: систематизация традиционных и LLM-ориентированных подходов по измерениям качества (производительность, фактическая точность, безопасность, эффективность), каталог датасетов и фреймворков, мета-анализ практик оценки в значимых работах по RAG.  
+Вердикт: поддерживает П3 (оценка RAG ведётся по нескольким измерениям (производительность, фактическая точность, безопасность), а не одной метрикой совпадения с эталоном; обзор сводит традиционные и LLM-ориентированные методы); уточняет П1 (зависимость RAG от динамических источников знаний названа отдельной трудностью оценки — выборка G должна быть устойчива к изменению корпуса).  
+Где пригодится: Обзор §2.1.
+
+**25. The Great Nugget Recall: Automating Fact Extraction and RAG Evaluation with Large Language Models** — Ronak Pradeep et al., 2025, SIGIR 2025 (DOI 10.1145/3726302.3730090). [arXiv:2504.15068](https://arxiv.org/abs/2504.15068)  
+Суть: AutoNuggetizer переносит nugget-методологию TREC QA 2003 на RAG: LLM автоматически извлекает атомарные факты и сопоставляет их с ответами систем; полностью автоматический вариант калиброван против ручной разметки TREC 2024.  
+Вердикт: поддерживает П3 (оценка по атомарным фактам эталона вместо строкового совпадения); поддерживает П7 (автоматическая оценка валидирована по человеческим аннотациям).  
+Где пригодится: Обзор §2.1; Метод (этап 6): альтернатива эталонному ответу.
+
+**26. Can LLMs Be Trusted for Evaluating RAG Systems? A Survey of Methods and Datasets** — Lorenz Brehme, Thomas Ströhle, Ruth Breu, 2025, SDS 2025 (IEEE Swiss Conference on Data Science); препринт arXiv:2504.20119. [arXiv:2504.20119](https://arxiv.org/abs/2504.20119) · [DOI](https://doi.org/10.1109/sds66131.2025.00010)  
+Суть: Систематический обзор 63 работ об оценке RAG по компонентам (данные, ретривер, индекс и БД, генератор): LLM способна и порождать оценочные наборы, и оценивать, однако авторы подчёркивают ограничения такой автоматизации и необходимость баланса с человеческим суждением.  
+Вердикт: поддерживает П7 (обзор фиксирует ограничения LLM-оценки и необходимость сопоставления с человеческим суждением для надёжной оценки); уточняет П2 (оценочные наборы могут порождаться LLM, но человеческий вклад остаётся необходимым — разметка людьми (R) не заменяется автоматикой).  
+Где пригодится: Обзор §2.1.
+
+**27. Benchmarking LLM Faithfulness in RAG with Evolving Leaderboards** — Manveer Singh Tamber et al., 2025, EMNLP 2025 Industry. [arXiv:2505.04847](https://arxiv.org/abs/2505.04847)  
+Суть: Два инструмента Vectara для измерения верности ответа контексту в RAG: лидерборд галлюцинаций на детекторе HHEM (с 2023 г.) и FaithJudge — судья-LLM, использующий пул размеченных людьми примеров галлюцинаций, с обновляемым лидербордом по суммаризации, QA и data-to-text.  
+Вердикт: поддерживает П7 (судья строится на пуле размеченных людьми примеров галлюцинаций, что заметно улучшает автоматическую оценку — человеческая разметка остаётся опорой); уточняет П4 (специализированные детекторы галлюцинаций (HHEM, класс NLI) имеют ограничения, что мотивирует судью-LLM — ограничение для CP_ent через NLI).  
+Где пригодится: Обзор §2.1; Метод (этап 6).
+
+**28. Nugget-based Annotation Protocol and Tool For Evaluating Long-form Retrieval-Augmented Generation** — Eugene Yang et al., 2025, SIGIR 2025. [DOI](https://doi.org/10.1145/3726302.3730156)  
+Суть: Протокол и инструмент (JHU HLTCOE / NIST) для nugget-разметки длинных ответов RAG в четыре шага — создание, ревизия, оценка поддержки документами, выравнивание, — снижающие когнитивную нагрузку и ошибки аннотаторов в задачах TREC RAG, BioGen и NeuCLIR.  
+Вердикт: уточняет П2 (надёжность разметки R обеспечивается не только числом аннотаторов и порогом α, но и пошаговым протоколом, минимизирующим когнитивную нагрузку; о числе аннотаторов и порогах согласия работа не говорит); уточняет П3 (эталон для развёрнутого ответа может быть множеством фактов-nuggets с привязкой к документам, а не одним ответом).  
+Где пригодится: Данные: инструкция разметки; Метод (этап 3).
+
+**29. RAGVUE: A Diagnostic View for Explainable and Automated Evaluation of Retrieval-Augmented Generation** — Keerthana Murugaraj, Salima Lamsiyah, Martin Theobald, 2025, arXiv preprint. [arXiv:2601.04196](https://arxiv.org/abs/2601.04196)  
+Суть: RAGVUE — диагностический безэталонный фреймворк, раскладывающий поведение RAG на качество поиска, релевантность и полноту ответа, строгую claim-level достоверность и калибровку судьи, с объяснением каждой метрики; в сравнении выявляет ошибки, которые RAGAS пропускает.  
+Вердикт: уточняет П3 (единый балл скрывает источник ошибок; нужна многоаспектная оценка судьёй, но RAGVUE делает её без эталона (reference-free)); уточняет П7 (калибровка судьи выделена как отдельная измеряемая компонента оценки); нейтрально П6 (качество поиска измеряется как отдельный диагностический компонент; связь с итоговым качеством ответа в аннотации не утверждается).  
+Где пригодится: Обзор §2.1; Обзор §2.2 (калибровка судьи); Метод (этап 6).
+
+**30. К вопросу о цифровых инструментах анализа СМИ стран Северо-Восточной Азии** **UNVERIFIED** — Багров А. М. et al., 2026, Проблемы Дальнего Востока, 2026, № 1, с. 147–156 (DOI на 24.09.2026 не разрешается). [DOI](https://doi.org/10.7868/S2712909826010109) · [код](https://github.com/ivran-lab/chinese-media)  
+Суть: Предыдущая публикация автора (ПДВ 2026, № 1): сопоставление цифровых инструментов анализа СМИ Северо-Восточной Азии и описание архитектуры промышленной системы Dual-Source RAG (архив ИВ РАН в Qdrant + SearchAPI). Задаёт объект исследования f_prod; количественной оценки качества ответов не содержит, поэтому в обзор методов оценки не входит — цитируется во Введении и при описании экспериментальной установки.  
+Вердикт: нейтрально H1 (описывает архитектуру f_prod (Qdrant + SearchAPI), не измеряет качество ответов).  
+Где пригодится: Введение: объект исследования и апробация; Эксперименты: описание f_prod.
+
+**31. LIT-RAGBench: Benchmarking Generator Capabilities of Large Language Models in Retrieval-Augmented Generation** — Koki Itai et al., 2026, arXiv preprint. [arXiv:2603.06198](https://arxiv.org/abs/2603.06198)  
+Суть: LIT-RAGBench оценивает генератор RAG при фиксированном контексте по пяти категориям (интеграция, рассуждение, логика, таблицы, отказ) на вымышленных сущностях, исключающих память предобучения.  
+Вердикт: поддерживает H2 (генераторы различаются при одинаковом контексте — обоснование абляции f_ρ); поддерживает П5 (отказ при отсутствии свидетельств — отдельная категория); уточняет H1 (вымышленные сущности устраняют утечку предобучения).  
+Где пригодится: Обзор §2.1; Обзор §2.3 (отказы, G^∅); Эксперименты: абляция.
+
+**32. Beyond Relevance: On the Relationship Between Retrieval and RAG Information Coverage** — Saron Samuel et al., 2026, arXiv preprint. [arXiv:2603.08819](https://arxiv.org/abs/2603.08819)  
+Суть: Систематическое исследование связи метрик ретривера и информационного покрытия ответа на TREC NeuCLIR/RAG 2024: метрики покрытия выдачи сильно коррелируют с nugget-покрытием ответов на уровне тем и систем.  
+Вердикт: поддерживает П6 (метрики покрытия выдачи сильно коррелируют с nugget-покрытием ответов на уровне тем и систем (TREC NeuCLIR 2024, TREC RAG 2024)); уточняет П6 (связь сильнее всего при совпадении целей поиска и генерации; итеративные RAG-конвейеры частично разрывают связь качества ответа с качеством поиска — оговорка для сопоставления Hit@k/nDCG@k относительно S*_i с Q(f)).  
+Где пригодится: Обзор §2.1; Обсуждение: метрики поиска.
+
+**33. Rethinking Evaluation for LLM Hallucination Detection: A Desiderata, A New RAG-based Benchmark, New Insights** — Wenbo Chen et al., 2026, arXiv preprint. [arXiv:2605.11330](https://arxiv.org/abs/2605.11330)  
+Суть: Требования к бенчмаркам детекции галлюцинаций и новый RAG-бенчмарк с длинным контекстом и реалистичным шумом меток; показано, что существующие наборы не удовлетворяют всем требованиям.  
+Вердикт: уточняет П2 (шум человеческой разметки — реальность, которую нужно измерять); уточняет П4 (детекторы следования источнику надо проверять при шуме разметки и длинном контексте).  
+Где пригодится: Обзор §2.1; Обсуждение.
+
+## 2. Большие языковые модели в роли судьи
+
+**34. G-Eval: NLG Evaluation using GPT-4 with Better Human Alignment** — Yang Liu et al., 2023, EMNLP 2023. [arXiv:2303.16634](https://arxiv.org/abs/2303.16634) · [DOI](https://doi.org/10.18653/v1/2023.emnlp-main.153) · [код](https://github.com/nlpyang/geval)  
+Суть: G-Eval — LLM-судья с цепочкой рассуждений и заполнением формы, баллы взвешиваются по вероятностям токенов; GPT-4 даёт Спирмена 0.514 с людьми на суммаризации, заметно выше n-граммных метрик, но авторы отмечают склонность судьи к текстам, порождённым LLM. Рецепт промпта для m_J^corr.  
+Вердикт: поддерживает П3 (BLEU/ROUGE слабо коррелируют с людьми, а LLM-судья с критериями и CoT превосходит все прежние методы по корреляции с людьми на суммаризации и диалоге); опровергает H5 (авторы в предварительном анализе фиксируют склонность LLM-судьи предпочитать тексты, порождённые LLM, — ограничение для допущения о незначимом самопредпочтении); уточняет H4 (лучший результат G-Eval — ρ_S = 0.514, т.е. на границе порога ρ_S ≥ 0.5; порог реалистичен, но запас минимален).  
+Где пригодится: Метод (этап 6): промпт судьи; Обзор §2.2; Обсуждение: порог ρ_S.
+
+**35. Large Language Models are not Fair Evaluators** — Peiyi Wang et al., 2023, ACL 2024. [arXiv:2305.17926](https://arxiv.org/abs/2305.17926) · [DOI](https://doi.org/10.18653/v1/2024.acl-long.511) · [код](https://github.com/i-Eval/FairEval)  
+Суть: Позиционное смещение судьи при парном сравнении и его калибровка перестановкой позиций (balanced position calibration).  
+Вердикт: уточняет П7 (надёжность судьи зависит от порядка предъявления); нейтрально H5 (смещение позиции, а не самопредпочтение).  
+Где пригодится: Обзор §2.2; Метод (этап 6): протокол судьи.
+
+**36. Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena** — Lianmin Zheng et al., 2023, NeurIPS 2023 D&B. [arXiv:2306.05685](https://arxiv.org/abs/2306.05685) · [DOI](https://doi.org/10.52202/075280-2020) · [код](https://github.com/lm-sys/FastChat)  
+Суть: MT-Bench и Chatbot Arena: сильный судья GPT-4 достигает более 80 % согласия с людьми — на уровне согласия людей между собой; описаны позиционное смещение, смещение к длинному ответу и самоусиление.  
+Вердикт: поддерживает H4 (согласие судьи GPT-4 с людьми более 80 % — на уровне согласия людей между собой); поддерживает П9 (позиционное смещение, смещение к длинному ответу и возможное самоусиление мотивируют выбор судьи вне множества оцениваемых моделей); уточняет H5 (самоусиление судьи рассматривается как возможное смещение, но вывод о его наличии авторы считают неокончательным из-за малого объёма данных — H5 требует отдельной проверки).  
+Где пригодится: Обзор §2.2; Метод (этап 7); Обсуждение.
+
+**37. Benchmarking Cognitive Biases in Large Language Models as Evaluators** — Ryan Koo et al., 2023, ACL 2024. [arXiv:2309.17012](https://arxiv.org/abs/2309.17012) · [DOI](https://doi.org/10.18653/v1/2024.findings-acl.29) · [код](https://github.com/minnesotanlp/cobbler)  
+Суть: CoBBLEr — бенчмарк шести когнитивных смещений LLM-судей (порядок, salience/длина, эгоцентрическое самопредпочтение, bandwagon и др.) на 15 моделях: смещения проявляются в среднем в 40 % сравнений, а согласие с людьми по RBO лишь 49.6 %; авторы сомневаются в пригодности LLM для автоматической разметки.  
+Вердикт: поддерживает П9 (систематическое самопредпочтение судей — довод за исключение судьи из множества оцениваемых систем); опровергает H4 (средний RBO предпочтений судей и людей 49.6 %; авторы заключают, что LLM-судьи пока не согласованы с людьми); опровергает H5 (эгоцентрическое смещение (модель выше ранжирует собственные ответы) — одно из шести измеренных, а смещения в целом затрагивают в среднем 40 % сравнений).  
+Где пригодится: Обзор §2.2; Обсуждение: ограничения судьи.
+
+**38. LLM Evaluators Recognize and Favor Their Own Generations** — Arjun Panickssery, Samuel R. Bowman, Shi Feng, 2024, NeurIPS 2024 (arXiv 2024). [arXiv:2404.13076](https://arxiv.org/abs/2404.13076) · [DOI](https://doi.org/10.52202/079017-2197)  
+Суть: Судьи-LLM узнают собственные тексты и оценивают их выше; самопредпочтение связано с самоузнаванием — критично, когда генератор f_prod и судья совпадают.  
+Вердикт: поддерживает П9 (самоузнавание судьи искажает оценку его собственных выходов, поэтому судья m_J не должен входить в множество сравниваемых систем); опровергает H5 (GPT-4 и Llama 2 нетривиально точно узнают собственные выходы и ставят им более высокие оценки; сила самопредпочтения линейно связана с самоузнаванием, причинная связь устойчива к простым конфаундерам).  
+Где пригодится: Обзор §2.2; Постановка: предположение о судье; Обсуждение.
+
+**39. Replacing Judges with Juries: Evaluating LLM Generations with a Panel of Diverse Models** — Pat Verga et al., 2024, arXiv preprint. [arXiv:2404.18796](https://arxiv.org/abs/2404.18796)  
+Суть: Панель из нескольких небольших судей разных семейств (PoLL) превосходит одного крупного судью, дешевле и показывает меньшее внутримодельное смещение.  
+Вердикт: поддерживает П9 (ансамбль судей разных семейств снижает самопредпочтение); уточняет H5 (внутримодельное смещение измеримо и уменьшается ансамблем).  
+Где пригодится: Обзор §2.2; Постановка: предположение о судье.
+
+**40. Prometheus 2: An Open Source Language Model Specialized in Evaluating Other Language Models** — Seungone Kim et al., 2024, EMNLP 2024. [arXiv:2405.01535](https://arxiv.org/abs/2405.01535) · [код](https://github.com/prometheus-eval/prometheus-eval)  
+Суть: Prometheus 2 — открытый специализированный судья, поддерживающий прямую оценку по шкале и парное сравнение по пользовательским критериям; на 4 бенчмарках прямой оценки и 4 парных даёт наивысшую среди открытых судей корреляцию и согласие с людьми и GPT-4.  
+Вердикт: уточняет H4 (высокое согласие с людьми и GPT-4 показано на 8 бенчмарках с пользовательскими критериями; перенос на русскоязычные ответы по новостному корпусу требует собственной проверки ρ_S); уточняет П9 (специализированный открытый судья — практический кандидат на роль m_J вне множества оцениваемых моделей; мотивация авторов — прозрачность, контролируемость и стоимость, а не независимость как таковая).  
+Где пригодится: Метод (этап 7): выбор судьи; Обзор §2.2.
+
+**41. Judging the Judges: Evaluating Alignment and Vulnerabilities in LLMs-as-Judges** — Aman Singh Thakur et al., 2024, GEM² Workshop, ACL 2025. [arXiv:2406.12624](https://arxiv.org/abs/2406.12624)  
+Суть: Тринадцать судей оценивают девять моделей на задаче с высоким согласием людей: только крупнейшие судьи достигают разумного согласия с людьми, но всё ещё далеки от межчеловеческого, а оценки могут отличаться до 5 баллов.  
+Вердикт: поддерживает П7 (ранжирование систем судьёй устойчивее его абсолютных оценок); уточняет H4 (согласие судьи с людьми ниже согласия людей между собой даже в чистом сценарии).  
+Где пригодится: Обзор §2.2; Метод (этап 7).
+
+**42. Justice or Prejudice? Quantifying Biases in LLM-as-a-Judge** — Jiayi Ye et al., 2024, ICLR 2025 (arXiv 2024). [arXiv:2410.02736](https://arxiv.org/abs/2410.02736)  
+Суть: CALM — количественная оценка 12 типов смещений судьи с автоматизированной проверкой устойчивости оценок к возмущениям.  
+Вердикт: уточняет H5 (среди 12 квантифицируемых смещений есть самопредпочтение (self-enhancement); даже у сильных судей значимые смещения сохраняются на отдельных задачах, поэтому H5 требует явной проверки); уточняет П7 (надёжность судьи можно дополнительно проверять без людей — устойчивостью оценок к принципно-направленным возмущениям входа (CALM), что дополняет валидацию по разметке R).  
+Где пригодится: Обзор §2.2; Метод (этап 7).
+
+**43. JudgeBench: A Benchmark for Evaluating LLM-based Judges** — Sijun Tan et al., 2024, ICLR 2025. [arXiv:2410.12784](https://arxiv.org/abs/2410.12784) · [код](https://github.com/ScalerLab/JudgeBench)  
+Суть: JudgeBench — бенчмарк «оценщика оценщиков» на сложных парах ответов с объективно верной стороной (знания, рассуждения, математика, код); многие сильные судьи, включая GPT-4o, лишь немного лучше случайного угадывания.  
+Вердикт: поддерживает П7 (согласие с человеческими предпочтениями плохо предсказывает фактическую правильность, поэтому надёжность и валидность судьи нужно проверять раздельно и обосновывать выбор m_J мета-оценкой); опровергает H4 (на трудных парах согласие судьи с объективной истиной близко к случайному — ограничение для доверия к m_J; оговорка: задачи JudgeBench сложнее сверки ответа с эталоном по новостному корпусу).  
+Где пригодится: Обзор §2.2; Метод (этап 7).
+
+**44. A Survey on LLM-as-a-Judge** — Jiawei Gu et al., 2024, arXiv preprint. [arXiv:2411.15594](https://arxiv.org/abs/2411.15594)  
+Суть: Обзор направления «LLM как судья»: стратегии повышения надёжности (согласованность, смягчение смещений, адаптация к сценариям), методики и бенчмарк для оценки надёжности самого судьи, практические приложения и открытые проблемы.  
+Вердикт: поддерживает П7 (надёжность судьи названа ключевой проблемой, предложены методики и бенчмарк для её мета-оценки); уточняет П9 (смягчение смещений судьи — одна из стратегий надёжности; обзор даёт основания для выбора судьи m_J с учётом смещений, включая связь оцениваемых моделей и судьи).  
+Где пригодится: Обзор §2.2.
+
+**45. From Generation to Judgment: Opportunities and Challenges of LLM-as-a-judge** — Dawei Li et al., 2025, EMNLP 2025. [DOI](https://doi.org/10.18653/v1/2025.emnlp-main.138)  
+Суть: Обзор EMNLP 2025 «От генерации к суждению»: таксономия LLM-судей по объекту оценки, методике и способу бенчмаркинга; ненадёжность одиночного судьи из-за присущих смещений и уязвимостей выделена как открытая проблема.  
+Вердикт: поддерживает П7 (надёжность и смещения судьи выделены как открытая проблема; результаты одиночного судьи ненадёжны из-за присущих смещений — нужна проверка по людям); нейтрально П9 (обзор систематизирует бенчмарки квантификации смещений судьи, но требования внешнего по отношению к оцениваемым моделям судьи не формулирует).  
+Где пригодится: Обзор §2.2.
+
+**46. The Alternative Annotator Test for LLM-as-a-Judge: How to Statistically Justify Replacing Human Annotators with LLMs** — Nitay Calderon, Roi Reichart, Rotem Dror, 2025, arXiv preprint. [arXiv:2501.10970](https://arxiv.org/abs/2501.10970)  
+Суть: Alt-test — статистическая процедура, обосновывающая замену человеческих аннотаторов LLM по небольшой размеченной подвыборке; введена интерпретируемая мера сравнения LLM-аннотаторов с людьми.  
+Вердикт: поддерживает П7 (предложен формальный статистический критерий (alt-test) допустимости замены человеческих аннотаторов LLM-судьёй по небольшой размеченной подвыборке — обоснование отдельной валидации судьи m_J по людям); уточняет H4 (порог ρ_S≥0,5 можно дополнить alt-test и мерой сравнения LLM-судей; качество судьи зависит от модели (закрытые лучше открытых) и техники промптинга).  
+Где пригодится: Метод (этап 7); Обзор §2.2.
+
+**47. Preference Leakage: A Contamination Problem in LLM-as-a-judge** — Dawei Li et al., 2025, arXiv preprint. [arXiv:2502.01534](https://arxiv.org/abs/2502.01534) · [код](https://github.com/David-Li0406/Preference-Leakage)  
+Суть: Утечка предпочтений: судья систематически завышает оценки моделям, связанным с ним (та же модель, потомок, то же семейство); эффект подтверждён на нескольких бенчмарках.  
+Вердикт: опровергает H5 (смещение судьи к родственным моделям (та же модель, потомок, то же семейство) эмпирически подтверждено на нескольких бенчмарках); уточняет П9 (судья должен быть не только вне множества оцениваемых моделей, но и не связан с ними отношением наследования или принадлежностью к тому же семейству).  
+Где пригодится: Обзор §2.2; Постановка; Обсуждение.
+
+**48. Great Models Think Alike and this Undermines AI Oversight** — Shashwat Goel et al., 2025, arXiv preprint. [arXiv:2502.04313](https://arxiv.org/abs/2502.04313)  
+Суть: Метрика сходства моделей CAPA по перекрытию ошибок: судьи благоволят похожим на себя моделям, обобщая самопредпочтение; с ростом способностей ошибки моделей становятся более похожими.  
+Вердикт: опровергает H5 (предпочтение похожих моделей — обобщение самопредпочтения); уточняет П9 (независимость судьи следует измерять сходством ошибок, а не только семейством).  
+Где пригодится: Обзор §2.2; Метод (этап 7): проверка H5.
+
+**49. MEMERAG: A Multilingual End-to-End Meta-Evaluation Benchmark for Retrieval Augmented Generation** — María Andrea Cruz Blandón et al., 2025, arXiv preprint. [arXiv:2502.17163](https://arxiv.org/abs/2502.17163) · [код](https://github.com/amazon-science/MEMERAG)  
+Суть: MEMERAG — мультиязычный мета-оценочный бенчмарк RAG на нативных вопросах MIRACL с экспертной разметкой faithfulness и relevance и высоким согласием аннотаторов; используется для проверки автоматических оценщиков.  
+Вердикт: поддерживает П7 (бенчмарк для мета-оценки LLM-судей по экспертной разметке faithfulness/relevance на нативных неанглийских вопросах (MIRACL)); уточняет П2 (экспертная разметка с высоким согласием аннотаторов как основа мета-оценки; число аннотаторов и порог согласия в аннотации не указаны).  
+Где пригодится: Обзор §2.2; Обзор §2.4; Метод (этап 7).
+
+**50. M-Prometheus: A Suite of Open Multilingual LLM Judges** — José Pombal et al., 2025, arXiv preprint. [arXiv:2504.04953](https://arxiv.org/abs/2504.04953)  
+Суть: M-Prometheus — открытые мультиязычные судьи 3B–14B для прямой оценки и парных сравнений более чем на 20 языках; абляции показывают важность выбора базовой модели и обучения на синтетической мультиязычной, а не переведённой, обратной связи. Кандидат в судьи m_J, не входящие в множество оцениваемых систем.  
+Вердикт: уточняет H4 (большинство судей оптимизированы под английский, качество автоматической оценки на других языках ниже — мультиязычное качество судьи является отдельным фактором согласия с людьми); уточняет П9 (даёт открытый мультиязычный судья другого семейства, что позволяет выбрать m_J вне оцениваемых моделей; аргумента о необходимости такого выбора в аннотации нет).  
+Где пригодится: Метод (этап 7): выбор судьи; Обзор §2.2.
+
+**51. Reassessing Extractive QA Datasets at Scale: LLM-as-a-Judge and In-Depth Analyses** — Xanh Ho et al., 2025, arXiv preprint. [arXiv:2504.11972](https://arxiv.org/abs/2504.11972)  
+Суть: Систематическое исследование LLM-судьи на четырёх extractive-QA наборах: корреляция судьи с людьми до 0,85 против 0,22 у EM и 0,40 у F1; трудности с некоторыми типами ответов; самопредпочтение в этой задаче не обнаружено.  
+Вердикт: поддерживает H4 (судья по эталону достигает корреляции с людьми до 0,85); поддерживает H5 (самопредпочтение не выявлено при оценке правильности по эталону); поддерживает П3 (EM (0,22) и F1 (0,40) слабо коррелируют с человеческой оценкой правильности даже на extractive QA; для развёрнутых ответов ожидается ещё хуже); опровергает П9 (при оценке по эталону совпадение судьи и оцениваемой модели не порождало смещения, т.е. запрет П9 в этом режиме может быть избыточной предосторожностью).  
+Где пригодится: Обзор §2.2; Метод (этап 6): m_J^corr; Постановка: ADR-007.
+
+**52. How Reliable is Multilingual LLM-as-a-Judge?** — Xiyan Fu, Wei Liu, 2025, arXiv preprint. [arXiv:2505.12201](https://arxiv.org/abs/2505.12201)  
+Суть: Пять судей на 25 языках: согласованность суждений между языками низкая (Fleiss κ ≈ 0,3), особенно для малоресурсных языков; ни мультиязычное обучение, ни масштаб не решают проблему.  
+Вердикт: поддерживает П7 (надёжность судьи в мультиязычной оценке не гарантирована, требуется отдельная проверка; предложен ансамбль судей для повышения согласованности); уточняет H4 (суждения LLM-судей несогласованы между языками (Fleiss κ ≈ 0,3), особенно на малоресурсных; масштаб и мультиязычное обучение не помогают — согласие судьи с людьми нужно проверять на языке оцениваемых ответов).  
+Где пригодится: Обзор §2.2; Обсуждение: русскоязычные ответы.
+
+**53. Beyond the Surface: Measuring Self-Preference in LLM Judgments** — Zhi-Yuan Chen et al., 2025, arXiv preprint. [arXiv:2506.02592](https://arxiv.org/abs/2506.02592)  
+Суть: DBG-оценка самопредпочтения как разности между оценкой судьи своему ответу и «золотым» суждением о его качестве — устраняет смешение смещения с реальным качеством.  
+Вердикт: поддерживает П9 (самопредпочтение устойчиво воспроизводится у судей разных версий и размеров, что обосновывает вынесение судьи за множество оцениваемых моделей); уточняет H5 (самопредпочтение нужно измерять относительно эталонных (золотых) суждений, иначе оно смешивается с реальным качеством ответов судьи).  
+Где пригодится: Обзор §2.3 (смещения судьи); Метод (этап 7): проверка H5.
+
+**54. An Empirical Study of LLM-as-a-Judge: How Design Choices Impact Evaluation Reliability** — Yusuke Yamauchi, Taro Yano, Masafumi Oyamada, 2025, arXiv preprint. [arXiv:2506.13639](https://arxiv.org/abs/2506.13639)  
+Суть: Эмпирическое исследование надёжности LLM-судьи на BIGGENBench и EvalBiasBench по двум осям — согласию с людьми и консистентности оценок: критерии оценки критичны, недетерминированная выборка повышает согласие с людьми, а CoT почти не помогает при чётких критериях.  
+Вердикт: поддерживает П7 (согласие с людьми (валидность) и консистентность оценок (надёжность) рассматриваются как отдельные аспекты доверия к судье); уточняет H4 (чёткие критерии оценки и недетерминированное декодирование повышают согласие судьи с людьми; CoT даёт минимальный прирост).  
+Где пригодится: Метод (этап 6): промпт судьи; Обзор §2.2.
+
+**55. Assessing Support for the TREC 2024 RAG Track: A Large-Scale Comparative Study of LLM and Human Evaluations** — Nandan Thakur et al., 2025, SIGIR 2025. [DOI](https://doi.org/10.1145/3726302.3730165)  
+Суть: Крупное сравнение судьи GPT-4o и людей при оценке поддержки утверждений цитатами в TREC 2024 RAG Track: согласие судьи с людьми хорошее, а независимый человек согласуется с GPT-4o лучше, чем со вторым человеком.  
+Вердикт: поддерживает H4 (согласие судья–человек хорошее; независимый человек согласуется с GPT-4o лучше, чем со вторым человеком); поддерживает П4 (поддержка ответа цитируемыми документами (support) надёжно оценивается LLM-судьёй GPT-4o с хорошим согласием с людьми — аналог CP_ent); уточняет П7 (согласие судьи с людьми измерялось в двух режимах — разметка с нуля и постредактирование предсказаний судьи; при постредактировании согласие может быть завышено, поэтому для валидации по людям нужна независимая разметка R, а разногласия стоит разбирать качественно).  
+Где пригодится: Обзор §2.1; Метод (этап 6): CP_ent; Метод (этап 7).
+
+**56. Play Favorites: A Statistical Method to Measure Self-Bias in LLM-as-a-Judge** — Evangelia Spiliopoulou et al., 2025, arXiv preprint. [arXiv:2508.06709](https://arxiv.org/abs/2508.06709)  
+Суть: Статистический метод выделения самопредпочтения судьи: разность распределений оценок своим и чужим ответам при контроле истинного качества по независимому третьему судье (людям); на >5000 пар с экспертной разметкой у части судей (GPT-4o, Claude 3.5 Sonnet) выявлено само- и семейное смещение.  
+Вердикт: уточняет H5 (готовая процедура идентификации самопредпочтения с учётом реального качества ответов; у ряда судей само- и семейное смещение обнаружено); уточняет П7 (для отделения самопредпочтения от истинных различий в качестве нужна независимая эталонная оценка (люди), т.е. валидация судьи по людям).  
+Где пригодится: Метод (этап 7): проверка H5; Обзор §2.2.
+
+**57. Judge's Verdict: A Comprehensive Analysis of LLM Judge Capability Through Human Agreement** — Steve Han et al., 2025, arXiv preprint. [arXiv:2510.09738](https://arxiv.org/abs/2510.09738)  
+Суть: Бенчмарк Judge's Verdict: 54 судьи оценивают ответы RAG относительно эталонных ответов; двухшаговая методика — корреляция, затем κ Коэна и z-оценка «человекоподобности»; 27 из 54 судей достигают уровня людей.  
+Вердикт: поддерживает П7 (двухшаговая процедура разделяет корреляционный отбор и проверку паттерна согласия, что соответствует раздельной валидации надёжности и валидности); уточняет H4 (одной корреляции судьи с людьми недостаточно; нужно дополнить κ и сравнением с межчеловеческим согласием (z-оценка), иначе порог ρ_S ≥ 0,5 может пропустить «сверхсогласованных» или упрощающих судей); уточняет П2 (межчеловеческое согласие используется как референс для оценки судьи, поэтому его уровень (α) сам влияет на интерпретацию результатов H4).  
+Где пригодится: Обзор §2.2; Метод (этап 7): выбор судьи и порог согласия.
+
+**58. CalibJudge: Calibrated LLM-as-a-Judge for Multilingual RAG with Uncertainty-Aware Scoring** — Chenfeiyu Wen et al., 2026, AICON 2026 (ACM). [DOI](https://doi.org/10.1145/3807246.3807349)  
+Суть: CalibJudge — пост-хок калибровка мультиязычного судьи RAG (температурное масштабирование по языкам, оценка неопределённости, выборочный отказ судьи): на MEMERAG (5 языков) относительный прирост согласия с людьми по τ Кендалла до 21 %, разрыв справедливости между языками сокращается на 42 %.  
+Вердикт: поддерживает П7 (без сверки с людьми оценки судьи в мультиязычной постановке дрейфуют и несопоставимы между языками); уточняет H4 (согласие судьи с людьми зависит от языка и повышается калибровкой по языку — порог ρ_S ≥ 0.5 надо проверять на целевых языках (zh/ru)).  
+Где пригодится: Обзор §2.2; Обсуждение.
+
+**59. Self-Preference Bias in Rubric-Based Evaluation of Large Language Models** — José Pombal, Ricardo Rei, André F. T. Martins, 2026, arXiv preprint. [arXiv:2604.06996](https://arxiv.org/abs/2604.06996)  
+Суть: Самопредпочтение сохраняется даже в рубричной оценке с объективно проверяемыми критериями: судьи более чем на 50 % чаще ошибочно засчитывают критерий собственному ответу; ансамбль судей смягчает, но не устраняет эффект.  
+Вердикт: поддерживает П9 (рубрика не защищает от самопредпочтения — нужен внешний судья); опровергает H5 (смещение сохраняется при бинарных объективных критериях рубрики).  
+Где пригодится: Обзор §2.2; Обсуждение; Метод (этап 6): рубрика m_J^(d).
+
+**60. Judging the Judges: A Systematic Evaluation of Bias Mitigation Strategies in LLM-as-a-Judge Pipelines** — Sadman Kabir Soumik, 2026, Transactions on Machine Learning Research, 2026. [arXiv:2604.23178](https://arxiv.org/abs/2604.23178)  
+Суть: Сравнение девяти стратегий дебиасинга пяти судей на трёх бенчмарках: стилевое смещение доминирует над позиционным, а средняя модель с правильным дебиасингом достигает согласия с людьми 71 % (κ = 0,549) дешевле фронтирных судей.  
+Вердикт: поддерживает П7 (κ как мера согласия судьи с людьми); уточняет H4 (согласие с людьми зависит от протокола судейства больше, чем от размера модели).  
+Где пригодится: Обзор §2.2; Метод (этап 6): протокол судьи.
+
+**61. Reliability without Validity: A Systematic, Large-Scale Evaluation of LLM-as-a-Judge Models Across Agreement, Consistency, and Bias** — Justin D. Norman, Michael U. Rivera, D. Alex Hughes, 2026, arXiv preprint. [arXiv:2606.19544](https://arxiv.org/abs/2606.19544)  
+Суть: Крупнейшая мета-оценка 21 судьи по протоколам согласия, консистентности и аудита смещений: точное совпадение завышает согласие на 33–41 п. п. относительно κ, ранги судей меняются между бенчмарками, высокая test–retest надёжность сочетается с сильным позиционным смещением.  
+Вердикт: поддерживает П7 (надёжность и валидность судьи — разные свойства, измеряемые раздельно); уточняет H4 (согласие следует измерять с поправкой на случайность, а не долей совпадений).  
+Где пригодится: Обзор §2.2; Метод (этап 7); Аннотация: терминология.
+
+**62. BabelJudge: Measuring LLM-as-a-Judge Reliability Across Languages and Agent Trajectories** — Shreyas KC, 2026, arXiv preprint. [arXiv:2606.22329](https://arxiv.org/abs/2606.22329)  
+Суть: BabelJudge — аудит надёжности судьи без человеческих меток через контролируемую деградацию эталонных ответов; измеряет позиционное смещение, смещение к длине, непоследовательность и деградацию в малоресурсных языках.  
+Вердикт: уточняет H4 (надёжность судьи резко падает в малоресурсных языках (Hindi → Swahili: 0.714 → 0.550), и accuracy этот разрыв скрывает); уточняет П7 (надёжность (позиционное смещение, смещение к длине, непоследовательность) можно проверить возмущениями с известной истиной без людей; валидность по-прежнему требует человеческих оценок).  
+Где пригодится: Обзор §2.2; Метод (этап 7): аудит надёжности и смещений судьи.
+
+**63. Auto-Judge: A Cross-Task Benchmark for Comparing LLM Judges for Citation-Grounded RAG Systems** — Naghmeh Farzi et al., 2026, SIGIR 2026. [DOI](https://doi.org/10.1145/3805712.3808601)  
+Суть: Auto-Judge (SIGIR 2026) — ресурс для мета-оценки LLM-судей RAG-систем с цитированием: темы, пул ответов, человеческие суждения и воспроизводимый протокол сравнения судей.  
+Вердикт: поддерживает П7 (стандартизованный воспроизводимый протокол мета-оценки LLM-судей относительно человеческих суждений, включая перебор параметров и учёт вариантов); нейтрально П4 (ресурс с пулом цитирующих RAG-ответов и человеческими суждениями — потенциальная база для проверки метрик цитирования, но их валидность в аннотации не обсуждается).  
+Где пригодится: Обзор §2.2; Метод (этап 7).
+
+**64. Humans, LLMs, and Measures Do Not Align in Attributed Information Retrieval** — Lukas Gienapp et al., 2026, SIGIR 2026. [DOI](https://doi.org/10.1145/3805712.3809867)  
+Суть: Репликация оценки атрибутированного поиска с человеческими эталонами: эталонные метрики чувствительны к выбору эталонного ответа, согласие людей и LLM-судей по предпочтениям низкое, и ни одна автоматическая метрика не предсказывает человеческие предпочтения сильно.  
+Вердикт: поддерживает П7 (валидность LLM-эталонов и судей неясна без сверки с человеческими суждениями — валидация по людям обязательна); опровергает H4 (согласие людей и LLM-судей по парным предпочтениям низкое, несмотря на сходные агрегированные тенденции; ни одна автоматическая метрика не предсказывает человеческие предпочтения сильно); уточняет П3 (метрики по эталону существенно чувствительны к выбору эталонного ответа (LLM- vs человеческий), результат зависит от способа построения G).  
+Где пригодится: Обзор §2.2; Обсуждение; Метод (этап 7).
+
+## 3. Временная динамика вопросов, эталонные выборки, согласие аннотаторов
+
+**65. Content analysis in communication research** — Bernard Berelson, 1952, монография, Free Press, 1952. [Open Library](https://openlibrary.org/works/OL4892152W)  
+Суть: Классическая монография Берельсона о контент-анализе как технике объективного, систематического и количественного описания явного содержания коммуникации с требованием надёжности кодирования — методологическое основание количественного анализа СМИ в социологии и исследованиях коммуникации.  
+Вердикт: нейтрально П1 (фон: количественный анализ содержания СМИ как дисциплина); нейтрально П2 (фон: требование надёжности кодирования сформулировано, но число кодировщиков и пороги согласия не задаются).  
+Где пригодится: Введение; Обзор §2.3: контент-анализ и согласие.
+
+**66. Reliability of Content Analysis: The Case of Nominal Scale Coding** — William A. Scott, 1955, Public Opinion Quarterly. [DOI](https://doi.org/10.1086/266577)  
+Суть: Скотт вводит коэффициент π для надёжности кодирования в контент-анализе — одну из первых мер согласия с поправкой на случайное совпадение для номинальной шкалы; контент-анализ СМИ исторически и есть домен, из которого выросли κ и α.  
+Вердикт: уточняет H4 (α Криппендорфа при двух кодировщиках и номинальной шкале сводится к π Скотта, т.е. используемая мера согласия людей — обобщение π); нейтрально П2 (исторический фон: π — предшественник α, но о числе аннотаторов R и пороге α работа не говорит).  
+Где пригодится: Обзор §2.3: меры согласия; Метод (этап 4).
+
+**67. A Coefficient of Agreement for Nominal Scales** — Jacob Cohen, 1960, Educational and Psychological Measurement. [DOI](https://doi.org/10.1177/001316446002000104)  
+Суть: Коэн ввёл κ — согласие двух кодировщиков на номинальной шкале с поправкой на случайное совпадение; вычисляется дополнительно к α для сопоставимости с литературой.  
+Вердикт: уточняет H4 (исходный κ определён для двух оценщиков, поэтому для R=3 основной мерой согласия людей выступает α, а κ приводится лишь для сопоставимости с литературой); нейтрально П2 (классическая мера согласия двух кодировщиков с поправкой на случайность; о числе аннотаторов R=3 и пороге α≥0.67 не говорит).  
+Где пригодится: Метод (этап 4); Обзор §2.3.
+
+**68. Relevance assessments and retrieval system evaluation** — M.E. Lesk, G. Salton, 1968, Information Storage and Retrieval. [DOI](https://doi.org/10.1016/0020-0271%2868%2990029-6)  
+Суть: Леск и Солтон показали, что расхождения между асессорами в оценках релевантности почти не меняют относительное ранжирование поисковых стратегий: сравнение систем устойчиво к субъективности эталона.  
+Вердикт: поддерживает П2 (разные наборы оценок релевантности дают одинаковый порядок систем); уточняет H4 (цель согласия аннотаторов — стабильность сравнения систем, а не идеальное совпадение меток).  
+Где пригодится: Обзор §2.3: согласие аннотаторов; Обсуждение: устойчивость сравнения к разметке.
+
+**69. Estimating the Reliability, Systematic Error and Random Error of Interval Data** — Klaus Krippendorff, 1970, Educational and Psychological Measurement. [DOI](https://doi.org/10.1177/001316447003000105)  
+Суть: Первоисточник α Криппендорфа для интервальных данных: надёжность оценивается по согласию многих наблюдателей на выборке, а несогласие разлагается на систематическую и случайную ошибку; обобщение на другие шкалы, пропуски и порог 0.67 введены в поздних работах автора.  
+Вердикт: поддерживает П2 (коэффициент рассчитан на согласие многих наблюдателей (R > 2) и разделяет систематическую и случайную ошибку разметки); нейтрально H4 (даёт основание коэффициента α, но порог α ≥ 0.67 в статье не формулируется).  
+Где пригодится: Метод (этап 4): согласие; Обзор §2.3.
+
+**70. Measuring nominal scale agreement among many raters.** — Joseph L. Fleiss, 1971, Psychological Bulletin. [DOI](https://doi.org/10.1037/h0031619)  
+Суть: Флейсс обобщил κ на произвольное число кодировщиков при полной разметке; не поддерживает пропуски и неполное перекрытие, что и мотивирует выбор α.  
+Вердикт: уточняет П2 (работает при R > 2, но требует полного перекрытия разметки).  
+Где пригодится: Метод (этап 4); Обзор §2.3.
+
+**71. The Measurement of Observer Agreement for Categorical Data** — J. Richard Landis, Gary G. Koch, 1977, Biometrics. [DOI](https://doi.org/10.2307/2529310)  
+Суть: Лэндис и Кох построили обобщённые κ-статистики и тесты межнаблюдательского смещения для категориальных данных и попутно предложили условную шкалу словесной интерпретации κ (0.41–0.60 умеренное, 0.61–0.80 существенное, выше 0.80 почти полное согласие); пороги 0.67 и 0.8 для α введены Криппендорфом независимо от неё.  
+Вердикт: уточняет H4 (порог 0.67 попадает в диапазон «существенного» согласия 0.61–0.80); уточняет П2 (даёт словесную интерпретацию величины коэффициента согласия, но сами авторы называют границы произвольными).  
+Где пригодится: Метод (этап 4): пороги α; Обсуждение.
+
+**72. High agreement but low Kappa: I. the problems of two paradoxes** — Alvan R. Feinstein, Domenic V. Cicchetti, 1990, Journal of Clinical Epidemiology. [DOI](https://doi.org/10.1016/0895-4356%2890%2990158-l)  
+Суть: Файнстайн и Чиккетти описывают два парадокса κ: при сильно несбалансированных категориях (редкий класс) и при расхождении маргинальных распределений высокое наблюдаемое согласие даёт низкий коэффициент. Для метки отвечаемости (G⁺ против G^∅) при малой доле неотвечаемых вопросов та же чувствительность к распространённости присуща и α Криппендорфа.  
+Вердикт: уточняет П2 (при несбалансированных метках коэффициент случайно-скорректированного согласия (κ, аналогично α) может быть занижен при высоком фактическом согласии, поэтому порог 0.67 надо интерпретировать с учётом распространённости категорий); уточняет П5 (малая доля неотвечаемых вопросов G^∅ в выборке усиливает парадокс: по метке отвечаемости низкий коэффициент не означает плохой разметки).  
+Где пригодится: Метод (этап 4): интерпретация α; Обсуждение.
+
+**73. Assessing agreement on classification tasks: the kappa statistic** — Jean Carletta, 1996, Computational Linguistics, 22(2), 1996. [arXiv:cmp-lg/9602004](https://arxiv.org/abs/cmp-lg/9602004)  
+Суть: Карлетта перенесла κ в компьютерную лингвистику как стандарт отчёта о согласии аннотаторов и, вслед за Криппендорфом, привела рабочие пороги: κ > 0.8 — надёжно, 0.67–0.8 — допускает лишь осторожные выводы.  
+Вердикт: поддерживает H4 (порог α ≥ 0.67 для согласия людей соответствует принятой в лингвистической разметке нижней границе); уточняет П2 (0.67 — нижняя граница для осторожных выводов, надёжной считается разметка при κ > 0.8; о достаточности числа аннотаторов R = 3 работа не говорит).  
+Где пригодится: Метод (этап 4); Обзор §2.3.
+
+**74. Variations in relevance judgments and the measurement of retrieval effectiveness** — Ellen M. Voorhees, 1998, SIGIR 1998. [DOI](https://doi.org/10.1145/290941.291017)  
+Суть: Вурхиз на данных TREC показала, что при разных асессорах абсолютные значения метрик меняются, а относительный порядок систем сохраняется, если различия между системами достаточно велики.  
+Вердикт: поддерживает П2 (порядок систем устойчив к смене асессоров); уточняет H4 (порог согласия должен обеспечивать стабильность ранжирования, а не полное совпадение меток); уточняет П8 (малые различия систем не отличимы от шума разметки — нужна проверка значимости).  
+Где пригодится: Обзор §2.3: согласие и его влияние на сравнение; Обсуждение.
+
+**75. Reliability in Content Analysis: Some Common Misconceptions and Recommendations** — K. Krippendorff, 2004, Human Communication Research. [DOI](https://doi.org/10.1093/hcr/30.3.411)  
+Суть: Криппендорф формулирует три условия, которым должна удовлетворять мера надёжности данных, разбирает поведение семи коэффициентов и даёт рекомендации по проверке надёжности в контент-анализе.  
+Вердикт: поддерживает П2 (α удовлетворяет условиям меры надёжности, процент согласия — нет); уточняет H4 (пороги 0,67 и 0,8 как ориентиры допустимой и надёжной разметки).  
+Где пригодится: Метод (этап 4); Обзор §2.3.
+
+**76. Agreement, the F-Measure, and Reliability in Information Retrieval** — G. Hripcsak, 2005, Journal of the American Medical Informatics Association. [DOI](https://doi.org/10.1197/jamia.m1733)  
+Суть: Хрипчак и Ротшильд показывают, что при большом числе отрицательных случаев κ стремится к F-мере согласия положительных меток — обоснование попарного F1 между ответами аннотаторов как меры согласия по свободным ответам.  
+Вердикт: поддерживает П2 (F-мера как мера согласия при неограниченном пространстве ответов).  
+Где пригодится: Метод (этап 4): попарный F1 ≥ 0,8.
+
+**77. Cheap and Fast -- But is it Good? Evaluating Non-Expert Annotations for Natural Language Tasks** — Rion Snow et al., 2008, EMNLP 2008. [ACL](https://aclanthology.org/D08-1027/)  
+Суть: Сноу и соавторы (EMNLP 2008) показали на пяти задачах NLP с разметкой через Amazon Mechanical Turk, что агрегация нескольких неэкспертных меток (в среднем около 4 на объект) сопоставима с экспертной разметкой; введена схема взвешивания и калибровки аннотаторов по их согласию с экспертом.  
+Вердикт: уточняет П2 (качество эксперта достигается агрегацией в среднем около 4 неэкспертных меток на объект (для части задач меньше); при R = 3 это условие выполняется лишь частично, а калибровка аннотаторов повышает надёжность).  
+Где пригодится: Метод (этап 3); Обзор §2.3.
+
+**78. Survey Article: Inter-Coder Agreement for Computational Linguistics** — Ron Artstein, Massimo Poesio, 2008, Computational Linguistics. [ACL](https://aclanthology.org/J08-4004/)  
+Суть: Артштейн и Поэзио — канонический разбор коэффициентов согласия (π, κ, α) в компьютерной лингвистике, их допущений и интерпретации порогов.  
+Вердикт: поддерживает П2 (α рекомендована для R > 2 и произвольных шкал); уточняет H4 (порог 0.67 допускает лишь осторожные выводы, 0.8 — надёжные).  
+Где пригодится: Метод (этап 4); Обзор §2.3.
+
+**79. Computing Krippendorff's Alpha-Reliability** **UNVERIFIED** — Klaus Krippendorff, 2011, технический отчёт, Annenberg School for Communication, University of Pennsylvania. [ссылка](https://www.asc.upenn.edu/sites/default/files/2021-03/Computing%20Krippendorff's%20Alpha-Reliability.pdf)  
+Суть: Технический отчёт Криппендорфа с алгоритмом вычисления α для любого числа аннотаторов, шкал и пропусков; пороги 0.67 (допустимо) и 0.8 (надёжно).  
+Вердикт: поддерживает П2 (α применим при любом числе аннотаторов, любых шкалах и пропусках; порог 0.667 назван нижним допустимым, 0.800 — надёжным); уточняет H4 (задаёт пороговое правило для проверки согласия людей: α ≥ 0.667 — минимум для предварительных выводов, α ≥ 0.800 — для надёжных).  
+Где пригодится: Метод (этап 4); Обзор §2.3.
+
+**80. TriviaQA: A Large Scale Distantly Supervised Challenge Dataset for Reading Comprehension** — Mandar Joshi et al., 2017, ACL 2017. [arXiv:1705.03551](https://arxiv.org/abs/1705.03551) · [код](https://github.com/mandarjoshi90/triviaqa)  
+Суть: TriviaQA — 95K пар вопрос-ответ, написанных энтузиастами, с автоматически собранными документами-свидетельствами (в среднем шесть на вопрос, distant supervision); часть выборки дополнительно верифицирована человеком на наличие ответа в свидетельстве. Базовые модели далеки от людей (23% и 40% против 80%).  
+Вердикт: нейтрально П2 (фон по конструированию эталона: вопросы от людей, свидетельства собраны автоматически, подмножество верифицировано вручную; о числе аннотаторов и мере согласия не сообщается); нейтрально П6 (пример эталона с привязкой вопроса к множеству документов-свидетельств, аналогичному S*_i).  
+Где пригодится: Метод (этап 2): черновики g_draft.
+
+**81. Natural Questions: A Benchmark for Question Answering Research** — Tom Kwiatkowski et al., 2019, Transactions of the Association for Computational Linguistics. [ACL](https://aclanthology.org/Q19-1026/) · [код](https://github.com/google-research-datasets/natural-questions)  
+Суть: Natural Questions — реальные запросы с раздельной разметкой длинного и короткого ответа и отвечаемости; пятикратная разметка dev/test и 25-кратная на подвыборке для оценки согласия.  
+Вердикт: поддерживает П5 (аннотатор помечает null, если на странице нет длинного/короткого ответа — неотвечаемые вопросы входят в эталон); уточняет П2 (NQ применяет 5-кратную разметку dev/test и 25-кратную на 302 примерах для анализа вариативности аннотаторов; раздельные метки отвечаемости и ответа — ориентир для выбора R и порога согласия, а не доказательство достаточности R = 3).  
+Где пригодится: Метод (этап 3): протокол разметки; Данные.
+
+**82. Time-Aware Language Models as Temporal Knowledge Bases** — Bhuwan Dhingra et al., 2021, Transactions of the Association for Computational Linguistics 2022; 10 257-273. [arXiv:2106.15110](https://arxiv.org/abs/2106.15110) · [DOI](https://doi.org/10.1162/tacl_a_00459)  
+Суть: TempLAMA: знания языковых моделей привязаны ко времени обучения и устаревают; темпоральный probing с датой в запросе.  
+Вердикт: поддерживает H1 (модель без поиска даёт устаревшие ответы); уточняет П1 (время как параметр вопроса).  
+Где пригодится: Обзор §2.3; Обсуждение: утечка предобучения.
+
+**83. A Dataset for Answering Time-Sensitive Questions** — Wenhu Chen, Xinyi Wang, William Yang Wang, 2021, NeurIPS 2021 D&B. [arXiv:2108.06314](https://arxiv.org/abs/2108.06314) · [код](https://github.com/wenhuchen/Time-Sensitive-QA)  
+Суть: TimeQA — набор вопросов по времязависимым фактам WikiData (верификация краудом), где ответ зависит от указанного момента времени; лучшая модель FiD даёт 46% при 87% у людей. Для G это довод, что вопрос по меняющемуся факту без временной привязки не является статическим.  
+Вердикт: уточняет П1 (многие факты эволюционируют во времени (пример с президентом США), поэтому предикат Inv(q) требует либо неизменного факта, либо явной временной привязки в вопросе; модели плохо справляются с временными рассуждениями (FiD 46% vs 87% у людей)).  
+Где пригодится: Постановка: правило E3; Данные: инструкция разметки.
+
+**84. RealTime QA: What's the Answer Right Now?** — Jungo Kasai et al., 2022, NeurIPS 2023 Datasets and Benchmarks. [arXiv:2207.13332](https://arxiv.org/abs/2207.13332) · [код](https://github.com/realtimeqa/realtimeqa_public)  
+Суть: RealTime QA — динамический QA-бенчмарк с еженедельными вопросами о текущих событиях, оспаривающий статические допущения open-domain QA; GPT-3 обновляет ответы по найденным документам, но при их недостаточности возвращает устаревшие ответы, что ставит задачу распознавания вопросов без ответа.  
+Вердикт: поддерживает H3 (GPT-3 корректно обновляет ответы на основе свежих найденных документов — важность актуального поиска); поддерживает П5 (при недостаточных найденных документах модель возвращает устаревшие ответы вместо отказа — нужна оценка распознавания unanswerable-случаев (G^∅, AR, 1−FAR)); уточняет П1 (ответы на вопросы о текущем мире меняются со временем, поэтому статическая выборка G долговечна только при отборе по предикату Inv(q)).  
+Где пригодится: Обзор §2.3; Постановка.
+
+**85. The 'Problem' of Human Label Variation: On Ground Truth in Data, Modeling and Evaluation** — Barbara Plank, 2022, arXiv preprint. [arXiv:2211.02570](https://arxiv.org/abs/2211.02570)  
+Суть: Планк: вариативность человеческих меток — не только шум, но и подлинное расхождение; она затрагивает данные, моделирование и оценку, и её нужно учитывать, а не устранять.  
+Вердикт: опровергает П2 (несогласие аннотаторов может быть подлинной вариативностью (субъективность, несколько правдоподобных ответов), а не шумом; допущение о единой ground truth, лежащее в основе порога α ≥ 0.67, само ставится под сомнение); уточняет П1 (множественные правдоподобные ответы названы источником вариативности меток — довод за исключение неоднозначных вопросов из эталона G и за фиксацию причин расхождений при разметке R).  
+Где пригодится: Метод (этап 5): адъюдикация; Обзор §2.3.
+
+**86. Self-Instruct: Aligning Language Models with Self-Generated Instructions** — Yizhong Wang et al., 2022, ACL 2023. [arXiv:2212.10560](https://arxiv.org/abs/2212.10560) · [код](https://github.com/yizhongw/self-instruct)  
+Суть: Self-Instruct — генерация инструкций и примеров самой моделью с автоматической фильтрацией невалидных и дублирующих образцов; методический фон для этапа черновиков вопросов моделью g_draft вне множества L с последующей фильтрацией.  
+Вердикт: нейтрально П2 (описывает конвейер генерации данных моделью с фильтрацией невалидных и похожих образцов; о числе аннотаторов и согласии разметки не говорит).  
+Где пригодится: Метод (этап 2).
+
+**87. When Not to Trust Language Models: Investigating Effectiveness of Parametric and Non-Parametric Memories** — Alex Mallen et al., 2022, ACL 2023. [arXiv:2212.10511](https://arxiv.org/abs/2212.10511)  
+Суть: PopQA: модели плохо запоминают редкие факты, масштабирование не помогает в «длинном хвосте», а поиск даёт наибольший выигрыш именно на непопулярных сущностях; на популярных модель без поиска конкурентоспособна.  
+Вердикт: поддерживает H3 (RAG-модели существенно превосходят на порядки более крупные модели без поиска на редких фактах); уточняет H1 (на популярных сущностях модель без поиска конкурентоспособна — нужна страта «известность события»); уточняет H2 (выигрыш от общего ретривера неравномерен по стратам; сравнение при общем ретривере должно учитывать долю «хвостовых» вопросов).  
+Где пригодится: Обзор §2.3; Постановка: страты; Обсуждение: утечка предобучения.
+
+**88. FreshLLMs: Refreshing Large Language Models with Search Engine Augmentation** — Tu Vu et al., 2023, ACL 2024 Findings. [arXiv:2310.03214](https://arxiv.org/abs/2310.03214) · [DOI](https://doi.org/10.18653/v1/2024.findings-acl.813) · [код](https://github.com/freshllms/freshqa)  
+Суть: FreshQA — таксономия вопросов never-changing / slow-changing / fast-changing / false-premise; показано, что знания LLM устаревают, а дополнение поиском восстанавливает точность на свежих вопросах.  
+Вердикт: поддерживает H3 (поиск повышает точность на изменяющихся вопросах); поддерживает П1 (класс never-changing выделен как устойчивый во времени).  
+Где пригодится: Постановка: правила E1–E5; Обзор §2.3.
+
+**89. Let LLMs Take on the Latest Challenges! A Chinese Dynamic Question Answering Benchmark** — Zhikun Xu et al., 2024, COLING 2025. [arXiv:2402.19248](https://arxiv.org/abs/2402.19248)  
+Суть: CDQA — китайский динамический QA по свежим новостям с классификацией вопросов по скорости изменения ответа; конкурирующий динамический набор.  
+Вердикт: поддерживает H3 (поиск помогает на свежих китайских новостях); уточняет П1 (динамические вопросы требуют регулярного обновления эталона).  
+Где пригодится: Обзор §2.3; Обзор §2.4; Постановка: конкуренты.
+
+**90. LLMs as Span Annotators: A Comparative Study of LLMs and Humans** — Zdeněk Kasner et al., 2025, arXiv preprint. [arXiv:2504.08697](https://arxiv.org/abs/2504.08697)  
+Суть: LLM как разметчики спанов против людей на трёх задачах: согласие LLM с людьми лишь умеренное, но ошибки — на уровне квалифицированных краудворкеров при многократно меньшей цене.  
+Вердикт: уточняет H4 (умеренное согласие LLM с людьми на тонкой разметке); уточняет П2 (LLM-черновики разметки нуждаются в человеческой проверке).  
+Где пригодится: Метод (этап 2): черновики; Обзор §2.3.
+
+**91. The Viability of Crowdsourcing for RAG Evaluation** — Lukas Gienapp et al., 2025, SIGIR 2025 (doi:10.1145/3726302.3730093; препринт arXiv:2504.15689). [arXiv:2504.15689](https://arxiv.org/abs/2504.15689) · [DOI](https://doi.org/10.1145/3726302.3730093)  
+Суть: CrowdRAG-25: 903 человеческих и 903 модельных ответа на 301 тему TREC RAG'24 и десятки тысяч парных суждений людей и LLM по семи измерениям полезности; парные суждения краудворкеров надёжны и дешевле, чем парные суждения LLM и поточечные оценки людей и LLM.  
+Вердикт: уточняет П2 (неэкспертная разметка надёжна при парном протоколе, тогда как поточечные оценки менее надёжны — для поточечной разметки R нужен контроль согласия (α)); уточняет П7 (парные суждения LLM уступают парным суждениям людей, а поточечные — обоим; согласие судьи с людьми нельзя предполагать без проверки).  
+Где пригодится: Метод (этап 7): человеческая валидация; Обзор §2.1.
+
+**92. NeoQA: Evidence-based Question Answering with Generated News Events** — Max Glockner et al., 2025, arXiv preprint. [arXiv:2505.05949](https://arxiv.org/abs/2505.05949)  
+Суть: NeoQA — вымышленные новостные события, статьи и вопросы, заведомо отсутствующие в предобучении; ответ возможен только по свидетельствам и только при их достаточности.  
+Вердикт: поддерживает П5 (ответ требуется только при достаточных свидетельствах; при их отсутствии модели прибегают к сокращённому рассуждению вместо отказа); уточняет H1 (без контроля утечки предобучения нельзя отличить ответ по корпусу от воспроизведения памяти модели, что влияет на сравнение f_prod с моделями без поиска); уточняет П1 (статическая выборка вопросов о реальных новостях со временем устаревает: новые модели усваивают события в предобучении; NeoQA решает это вымышленными событиями, для реального корпуса нужно учитывать дату отсечки моделей).  
+Где пригодится: Обзор §2.3; Обсуждение: утечка предобучения.
+
+**93. It's High Time: A Survey of Temporal Question Answering** — Bhawna Piryani et al., 2025, ACL 2026. [arXiv:2505.20243](https://arxiv.org/abs/2505.20243)  
+Суть: Обзор темпорального QA (ACL 2026): единая рамка «темпоральность корпуса × темпоральность вопроса × способности модели», систематизация наборов, задач и методов, включая RAG.  
+Вердикт: поддерживает П1 (выделяет темпоральность вопроса как отдельное измерение и подчёркивает рассуждение над эволюционирующими или неоднозначными фактами — ответы на такие вопросы меняются со временем, что обосновывает предикат Inv(q) и отбор только статических вопросов).  
+Где пригодится: Обзор §2.3.
+
+**94. AbstentionBench: Reasoning LLMs Fail on Unanswerable Questions** — Polina Kirichenko et al., 2025, arXiv preprint. [arXiv:2506.09038](https://arxiv.org/abs/2506.09038)  
+Суть: AbstentionBench: 20 наборов с неотвечаемыми, недоопределёнными, ложнопредпосылочными и устаревшими вопросами; отказ остаётся нерешённой задачей, а дообучение на рассуждения ухудшает отказы.  
+Вердикт: поддерживает П5 (отказ на неотвечаемых, недоопределённых, ложнопредпосылочных и устаревших вопросах — отдельная измеряемая способность, нерешённая даже у 20 передовых LLM; нужны вопросы G^∅ и метрики AR, 1−FAR); уточняет H1 (дообучение на рассуждения ухудшает отказы в среднем на 24%, поэтому преимущество f_prod над моделями без поиска по 1−FAR может зависеть от того, является ли сравниваемая модель reasoning-моделью); уточняет П5 (тщательно составленный системный промпт повышает долю отказов, поэтому AR и 1−FAR зависят от промпта и должны сравниваться при фиксированной инструкции).  
+Где пригодится: Обзор §2.3; Постановка: G^∅; Обсуждение.
+
+**95. DRAGOn: Designing RAG On Periodically Updated Corpus** — Fedor Chernogorskii et al., 2025, arXiv preprint. [arXiv:2507.05713](https://arxiv.org/abs/2507.05713)  
+Суть: DRAGOn — методика построения бенчмарка RAG над регулярно обновляемым корпусом российских новостей: генерация вопросов по извлечённому графу знаний, автоматическая оценка LLM-судьями и лидерборд.  
+Вердикт: опровергает П1 (регулярно порождаемые новые версии набора нужны, чтобы снизить утечку данных и оценивать системы на невиданных данных — ограничение замороженной статической выборки G); уточняет П2 (альтернатива ручной разметке R = 3: вопросы генерируются автоматически по графу знаний, а оценка выполняется набором LLM-судей, без описанной в аннотации человеческой верификации); нейтрально H3 (методика и лидерборд RAG над обновляемым корпусом русских новостей — фон для сравнения систем с поиском, без результата о вкладе ретривера).  
+Где пригодится: Обзор §2.3; Обзор §2.4; Постановка: конкуренты.
+
+**96. Towards a rigorous evaluation of RAG systems: the challenge of due diligence** — Grégoire Martinon et al., 2025, arXiv preprint. [arXiv:2507.21753](https://arxiv.org/abs/2507.21753)  
+Суть: Протокол строгой оценки промышленной RAG-системы (due diligence инвестфонда): человеческие и LLM-аннотации ошибок (галлюцинации, нерелевантность, неверные цитаты, отказы) с гарантиями точности по методу PPI.  
+Вердикт: поддерживает П5 (отказы и неверные цитаты как классы ошибок промышленной системы); поддерживает П7 (LLM-аннотации калибруются человеческими); уточняет П8 (PPI как способ получить интервалы при дорогой разметке).  
+Где пригодится: Обзор §2.1; Метод (этап 7); Эксперименты.
+
+**97. A Question Answering Dataset for Temporal-Sensitive Retrieval-Augmented Generation** — Ziyang Chen et al., 2025, Scientific Data, 2025 (arXiv 2025). [arXiv:2508.12282](https://arxiv.org/abs/2508.12282)  
+Суть: ChronoQA — 5176 вопросов по более чем 300 тыс. китайских новостей 2019–2024 с абсолютными, агрегатными и относительными временными типами; валидация правилами, судьёй и людьми; все вопросы времязависимы.  
+Вердикт: опровергает П1 (ChronoQA намеренно строит времязависимые вопросы (абсолютные, агрегатные, относительные) по китайским новостям и называет ресурс динамическим — выбор только статических вопросов исключает из G оценку временного согласования, что является ограничением П1); нейтрально П2 (многоступенчатая валидация (правила, LLM, люди) описана без числа аннотаторов и без меры согласия, поэтому о достаточности R=3 и α≥0,67 работа не свидетельствует).  
+Где пригодится: Введение; Обзор §2.3; Постановка: конкуренты.
+
+**98. Do Retrieval Augmented Language Models Know When They Don't Know?** — Youchao Zhou et al., 2025, arXiv preprint. [arXiv:2509.01476](https://arxiv.org/abs/2509.01476)  
+Суть: RALM плохо калиброваны относительно внутреннего и внешнего знания: при полностью нерелевантной выдаче они отказываются от вопросов, на которые могли ответить верно (избыточный отказ); дообучение снижает избыточные отказы, но не обязательно улучшает калибровку и общую точность.  
+Вердикт: поддерживает П5 (избыточный отказ — отдельный тип ошибки, поэтому нужны и доля верных отказов AR, и доля ложных отказов FAR на G⁺); уточняет H3 (при нерелевантной выдаче ретривера RALM отказывается от вопросов, на которые ответил бы без поиска, — поиск помогает не всегда).  
+Где пригодится: Обзор §2.3; Метод (этап 6): AR и FAR.
+
+**99. Investigating Retrieval-Augmented Generation Systems on Unanswerable, Uncheatable, Realistic, Multi-hop Queries** — Gabrielle Kaili-May Liu et al., 2025, arXiv preprint. [arXiv:2510.11956](https://arxiv.org/abs/2510.11956)  
+Суть: Конвейер автоматического порождения «нечитерских», реалистичных, неотвечаемых и многошаговых вопросов (CRUMQ) с контролем сложности для любого корпуса; такие вопросы оказываются существенно сложнее прежних бенчмарков для ведущих RAG-систем (снижение «читерности» до 81 %).  
+Вердикт: поддерживает П5 (неотвечаемые вопросы вне корпуса как обязательная часть бенчмарка RAG, на которой системы должны отказываться); уточняет П5 (вопросы G^∅ должны быть реалистичными и не решаемыми обходным путём; сложность контролируется при генерации).  
+Где пригодится: Обзор §2.3; Данные: G^∅.
+
+**100. LiveNewsBench: Evaluating LLM Web Search Capabilities with Freshly Curated News** — Yunfan Zhang, Kathleen McKeown, Smaranda Muresan, 2026, arXiv preprint. [arXiv:2602.13543](https://arxiv.org/abs/2602.13543)  
+Суть: LiveNewsBench автоматически порождает свежие вопросно-ответные пары по недавним новостям, чтобы вопросы заведомо выходили за пределы предобучения, и регулярно обновляется; часть тестовой выборки верифицирована людьми — динамическая постановка, противоположная статическому эталону G.  
+Вердикт: поддерживает H3 (бенчмарк строится так, что ответ невозможен без поиска (информация вне обучающих данных), т.е. разделяет параметрическое знание и способность к поиску — постановка, в которой прирост от ретривера ожидаем); уточняет П1 (динамический эталон, обновляемый по свежим новостям, исключает утечку в предобучение, но требует постоянной пересборки и человеческой верификации подвыборки — цена, которой статическая выборка G избегает).  
+Где пригодится: Обзор §2.3; Постановка: сравнение подходов.
+
+**101. How often do Answers Change? Estimating Recency Requirements in Question Answering** — Bhawna Piryani, Zehra Mert, Adam Jatowt, 2026, arXiv preprint. [arXiv:2603.16544](https://arxiv.org/abs/2603.16544)  
+Суть: RecencyQA — 4031 открытый вопрос с метками частоты смены ответа и стационарности; таксономия «свежесть × стационарность» показывает, что нестационарные вопросы значимо сложнее для LLM, а сложность растёт с частотой обновления ответа.  
+Вердикт: поддерживает П1 (стационарность и частота смены ответа — размечаемые свойства вопроса, позволяющие отделить долговечные вопросы); уточняет П1 (требование свежести может зависеть от контекста (нестационарные вопросы), поэтому предикат Inv(q) должен учитывать не только редкость смены ответа, но и контекстную зависимость).  
+Где пригодится: Постановка: предикат Inv(q); Данные: инструкция разметки; Обзор §2.3.
+
+**102. Prompt-Based Abstention Fails Under Misleading Context: A Controlled Study of Small Frozen RAG Models** — Yohanes Andre Setiawan, 2026, arXiv preprint. [arXiv:2608.22228](https://arxiv.org/abs/2608.22228)  
+Суть: GRAB-RAG: одни и те же вопросы в четырёх условиях контекста (поддерживающий, деградированный, отсутствующий, вводящий в заблуждение); малые замороженные модели отказываются при отсутствии свидетельств, но при подменённом свидетельстве отвечают в 41,6 % случаев, а NLI-верификатор не помогает, когда параметрическая память и подменённый пассаж согласны в ошибке.  
+Вердикт: уточняет П4 (NLI-проверка следования источнику (CP_ent) фиксирует согласие ответа с пассажем, но не корректность самого пассажа: при подменённом свидетельстве и совпадающей ошибке памяти верификатор её не ловит); уточняет П5 (отказ при отсутствии свидетельств (G^∅) и отказ при искажённых свидетельствах — разные способности; AR/FAR на G^∅ не измеряют вторую).  
+Где пригодится: Обзор §2.3; Обсуждение.
+
+**103. Same Agent, Different Answers: A Repeat-Aware Audit of Corpus-Induced Answer Churn in Retrieval-Augmented QA** — Jingjie Ning, Xueqi Li, 2026, arXiv preprint. [arXiv:2608.22856](https://arxiv.org/abs/2608.22856)  
+Суть: Аудит «слепого к точности» дрейфа ответов: после расширения индекса RAG-система меняет ответы на 6–10 % вопросов при изменении точности всего на 1,5 п. п.; предложена поправка на повторную вариативность генерации.  
+Вердикт: уточняет П1 (даже при фиксированных вопросах q и модели расширение индекса меняет 6–10 % ответов при почти неизменной точности — долговечность G требует фиксации снимка корпуса, а не только статичности вопросов); уточняет П8 (однократные сравнения переоценивают эффект изменений из-за обычной вариативности генерации — нужны повторные прогоны и вычитание внутриснимочного расхождения).  
+Где пригодится: Обзор §2.3; Метод (этап 8): воспроизводимость прогонов; Обсуждение.
+
+**104. Why RAGs Hallucinate: Penalty-Aware Evaluation of Retrieval-Augmented Generation Systems with Knowledge-Gap Canaries** — Alden Do Rosario, Hussein Younes, Felipe Pires, 2026, arXiv preprint. [arXiv:2608.26385](https://arxiv.org/abs/2608.26385)  
+Суть: Оценка коммерческих RAG-систем с асимметричным штрафом (верно +1, неверно −4, отказ 0) и вопросами-«канарейками», ответы на которые заведомо отсутствуют в базе: точность при ответе схожа (97–98 %), различия — в готовности отвечать без опоры.  
+Вердикт: поддерживает П5 (вопросы-«канарейки» с заведомо отсутствующим в базе ответом выявляют генерацию из параметрической памяти; асимметричный штраф делает отказ выгоднее угадывания); уточняет H1 (точность при ответе у систем схожа (97–98 %), различия определяются политикой отказа (16,7 % против 98,1 % нарушений на канарейках) и зависят от схемы штрафов); уточняет H5 (слепая панель из трёх судей разных семейств моделей с единогласием 98,9 % как способ снизить самопредпочтение одного судьи).  
+Где пригодится: Обзор §2.3; Постановка: G^∅; Метод (этап 6).
+
+## 4. Китайско- и русскоязычные ресурсы, кросс-языковой поиск, метрики генерации и цитирования
+
+**105. Bleu: a Method for Automatic Evaluation of Machine Translation** — Kishore Papineni et al., 2002, Proceedings of the 40th Annual Meeting of the Association for Computational Linguistics. [ACL](https://aclanthology.org/P02-1040/)  
+Суть: BLEU — канон n-граммных метрик (модифицированная n-граммная точность), предложенных как быстрая и дешёвая замена человеческой оценки МП; метрика обосновывается корреляцией с оценками людей. В обзоре — фон для лексических метрик по эталону.  
+Вердикт: поддерживает П7 (автоматическая метрика позиционируется как замена дорогой человеческой оценки и валидируется по корреляции с людьми — та же логика, что отбор метрик по ρ_S с людьми); нейтрально П3 (первоисточник n-граммных метрик по эталону; ограничения при перефразировании развёрнутых ответов — предмет последующей критики, а не самой работы).  
+Где пригодится: Обзор §2.4.
+
+**106. ROUGE: A Package for Automatic Evaluation of Summaries** — Chin-Yew Lin, 2004, Text Summarization Branches Out. [ACL](https://aclanthology.org/W04-1013/)  
+Суть: ROUGE — пакет recall-ориентированных n-граммных и LCS-метрик (ROUGE-N/L/W/S) для сопоставления с эталоном; метрики обоснованы корреляцией с человеческими оценками на данных DUC. В обзоре — фон для лексических метрик по эталону.  
+Вердикт: поддерживает П7 (автоматические метрики отбираются по корреляции с человеческими оценками — та же схема, что валидация метрик по ρ_S с людьми); нейтрально П3 (первоисточник recall-ориентированного лексического перекрытия с эталоном; ограничения для развёрнутых ответов в работе не обсуждаются).  
+Где пригодится: Обзор §2.4.
+
+**107. SQuAD: 100,000+ Questions for Machine Comprehension of Text** — Pranav Rajpurkar et al., 2016, EMNLP 2016. [arXiv:1606.05250](https://arxiv.org/abs/1606.05250)  
+Суть: SQuAD — датасет extractive QA (100 000+ вопросов по Википедии, ответ — фрагмент абзаца) и первоисточник метрик Exact Match и токенного F1 для QA; в аннотации приведены F1 51,0% для логистической регрессии и 86,8% для людей.  
+Вердикт: уточняет П3 (ответ определён как фрагмент абзаца, поэтому EM/F1 рассчитаны на короткие извлекаемые ответы, а не на развёрнутые); нейтрально П3 (первоисточник EM и токенного F1, используемых как базовые метрики по эталону).  
+Где пригодится: Метод (этап 6); Обзор §2.4.
+
+**108. A Span-Extraction Dataset for Chinese Machine Reading Comprehension** — Yiming Cui et al., 2018, EMNLP-IJCNLP 2019 (ACL Anthology D19-1600). [arXiv:1810.07366](https://arxiv.org/abs/1810.07366) · [DOI](https://doi.org/10.18653/v1/d19-1600) · [код](https://github.com/ymcui/cmrc2018)  
+Суть: CMRC 2018 — китайский extractive QA; EM и F1 считаются посимвольно из-за отсутствия пробелов между словами.  
+Вердикт: уточняет П3 (адаптация EM/F1 к китайскому через посимвольную токенизацию).  
+Где пригодится: Метод (этап 6): нормализация; Обзор §2.4.
+
+**109. BERTScore: Evaluating Text Generation with BERT** — Tianyi Zhang et al., 2019, ICLR 2020. [arXiv:1904.09675](https://arxiv.org/abs/1904.09675) · [код](https://github.com/Tiiiger/bert_score)  
+Суть: BERTScore — сопоставление контекстных эмбеддингов токенов кандидата и эталона вместо точного совпадения; на выходах 363 систем MT и image captioning лучше коррелирует с людьми, чем существующие метрики, и устойчивее к adversarial-парафразам.  
+Вердикт: уточняет П3 (семантическая близость к эталону смягчает ограничения EM/F1 и лучше коррелирует с людьми, но валидирована на коротких текстах MT/captioning, а не на развёрнутых ответах QA — основание оставить BERTScore как вспомогательную метрику рядом с судьёй m_J^corr).  
+Где пригодится: Метод (этап 6); Обзор §2.4.
+
+**110. Evaluating the Factual Consistency of Abstractive Text Summarization** — Wojciech Kryściński et al., 2019, EMNLP 2020. [arXiv:1910.12840](https://arxiv.org/abs/1910.12840) · [код](https://github.com/salesforce/factCC)  
+Суть: FactCC — слабо-надзорный классификатор фактической согласованности резюме с источником, обученный на синтетических rule-based искажениях предложений, с дополнительными задачами извлечения подтверждающих и противоречащих спанов. Превосходит модели, обученные с полным надзором на стандартных данных NLI и fact checking.  
+Вердикт: поддерживает П4 (согласованность утверждения с источником проверяется обученным классификатором — основа для CP_ent); уточняет П4 (готовые NLI-модели на стандартных датасетах проверяют согласованность с источником хуже специально обученной модели — ограничение для CP_ent через NLI).  
+Где пригодится: Метод (этап 6): CP_ent; Обзор §2.4.
+
+**111. Asking and Answering Questions to Evaluate the Factual Consistency of Summaries** — Alex Wang, Kyunghyun Cho, Mike Lewis, 2020, ACL 2020. [arXiv:2004.04228](https://arxiv.org/abs/2004.04228) · [код](https://github.com/W4ngatang/qags)  
+Суть: QAGS — проверка фактической согласованности резюме с источником через генерацию вопросов и сравнение ответов по источнику и по тексту; одна из ранних метрик согласованности, чья валидность подтверждена корреляцией с оценками людей на CNN/DailyMail и XSUM.  
+Вердикт: поддерживает П3 (стандартные метрики резюмирования почти нечувствительны к фактическим ошибкам, поэтому для оценки содержания нужны отдельные метрики согласованности/судья); поддерживает П4 (автоматическая метрика согласованности текста с источником даёт существенно более высокую корреляцию с человеческими суждениями, чем прежние метрики, что оправдывает метрику обоснованности по содержанию CP_ent как дополнение к CP_id/CR_id).  
+Где пригодится: Обзор §2.4.
+
+**112. XOR QA: Cross-lingual Open-Retrieval Question Answering** — Akari Asai et al., 2020, NAACL 2021. [arXiv:2010.11856](https://arxiv.org/abs/2010.11856) · [код](https://github.com/AkariAsai/XORQA)  
+Суть: XOR QA — открытое QA, где вопрос задан на одном языке (в т.ч. русском), а свидетельство ищется на другом (английском); формальная рамка и три задачи кросс-языкового поиска, переносимые по аналогии на пару «русский вопрос q — китайский корпус».  
+Вердикт: уточняет H3 (кросс-языковой открытый поиск признаётся сложной задачей (авторы прямо называют XOR QA challenging), поэтому прирост от ретривера при q на русском и корпусе на китайском может быть меньше, чем в одноязычной постановке); уточняет П6 (метрики поиска (Hit@k, Recall@k относительно S*_i) должны определяться по свидетельствам на языке корпуса, а не на языке вопроса; связь с итоговым качеством ответа работа не проверяет).  
+Где пригодится: Обзор §2.4; Постановка.
+
+**113. RuBQ 2.0: An Innovated Russian Question Answering Dataset** — Ivan Rybin et al., 2021, ESWC 2021, LNCS. [DOI](https://doi.org/10.1007/978-3-030-77385-4_32)  
+Суть: RuBQ 2.0 — 2910 русских вопросов с ответами, SPARQL и абзацами-свидетельствами из Википедии; крауд- и внутренняя разметка, лицензия CC BY 4.0.  
+Вердикт: уточняет П2 (разметка русскоязычного эталона сочетает краудсорсинг и внутреннюю (in-house) проверку — пример многоуровневого контроля качества разметки; число аннотаторов и коэффициент согласия в аннотации не приводятся); нейтрально П1 (фактоидные вопросы по Wikidata/Википедии, не по новостному корпусу; фон по русскоязычным QA-ресурсам).  
+Где пригодится: Обзор §2.4; Данные: лицензия и формат.
+
+**114. Translation of Proper Nouns (on the Material of Chinese Fiction Texts)** — В.Ю. Вашкявичус, О.В. Павлова, 2021, Вестник МГПУ. Серия «Филология. Теория языка. Языковое образование», 2020, № 3 (39) — год первого появления 2020, а не 2021. [DOI](https://doi.org/10.25688/2076-913X.2020.39.3.09)  
+Суть: Переводоведческая статья о передаче китайских имён собственных в художественных текстах; для ВКР годится только как сноска-иллюстрация вариативности транслитерации при построении алиасов A*_i, а не как позиция обзора.  
+Вердикт: нейтрально H1 (единственный русскоязычный филологический источник о передаче китайских имён; оставлен по решению автора).  
+Где пригодится: Метод (этап 6): алиасы A*_i — сноска.
+
+**115. SummaC: Re-Visiting NLI-based Models for Inconsistency Detection in Summarization** — Philippe Laban et al., 2021, TACL. [arXiv:2111.09525](https://arxiv.org/abs/2111.09525) · [код](https://github.com/tingofurro/summac)  
+Суть: SummaC — пофразовая NLI-агрегация (SummaCConv) как дешёвый детектор несогласованности текста с источником; на бенчмарке из шести датасетов сбалансированная точность 74,4%, на 5 п.п. выше прежних методов. Кандидат для вычисления CP_ent.  
+Вердикт: поддерживает П4 (NLI-модели, применённые с сегментацией на предложения и агрегацией, дают работоспособный автоматический детектор несогласованности (сбалансированная точность 74,4%), что делает CP_ent через NLI реализуемой метрикой); уточняет П4 (NLI не работает при подаче документа целиком: CP_ent надо считать по парам предложений ответа â и цитируемого фрагмента с агрегацией, а точность около 74% означает, что CP_ent следует валидировать по людям, а не считать эталонной).  
+Где пригодится: Метод (этап 6): CP_ent; Обзор §2.4.
+
+**116. Measuring Attribution in Natural Language Generation Models** — Hannah Rashkin et al., 2021, Computational Linguistics 49(4), 2023 (препринт arXiv, декабрь 2021). [arXiv:2112.12870](https://arxiv.org/abs/2112.12870)  
+Суть: AIS — рамка «атрибутируемо к идентифицированным источникам» и человеческий протокол оценки атрибуции.  
+Вердикт: поддерживает П4 (определение атрибутируемости к идентифицированным источникам и двухэтапный протокол ручной проверки, валидированный на QA, суммаризации и table-to-text); уточняет П2 (двухэтапный протокол ручной оценки атрибуции (сначала интерпретируемость, затем атрибутируемость) как образец инструкции для аннотаторов R; число аннотаторов и порог согласия в аннотации не заданы).  
+Где пригодится: Данные: инструкция разметки; Обзор §2.4.
+
+**117. Making a MIRACL: Multilingual Information Retrieval Across a Continuum of Languages** — Xinyu Zhang et al., 2022, TACL 2023 (препринт arXiv 2022). [arXiv:2210.09984](https://arxiv.org/abs/2210.09984)  
+Суть: MIRACL — датасет монолингвального ad hoc поиска по Википедии на 18 языках (в том числе китайском и русском): около 77 тыс. запросов и более 700 тыс. оценок релевантности, все выполнены нанятыми носителями языка; образец построения эталонных множеств релевантных документов S*_i.  
+Вердикт: уточняет П2 (оценки релевантности выполняются носителями языка — требование к квалификации аннотаторов, число аннотаторов и согласие не оговорены); нейтрально П6 (фон: методика построения эталонов релевантности S*_i с оценками носителями для zh и ru; связь метрик поиска с качеством ответа не исследуется).  
+Где пригодится: Обзор §2.4; Метод (этап 3): китаеязычный аннотатор.
+
+**118. FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation** — Sewon Min et al., 2023, EMNLP 2023. [arXiv:2305.14251](https://arxiv.org/abs/2305.14251) · [код](https://github.com/shmsw25/FActScore)  
+Суть: FActScore — декомпозиция длинного ответа на атомарные факты и подсчёт доли фактов, подтверждённых надёжным источником; автоматическая оценка через поиск и сильную LLM отклоняется от человеческой менее чем на 2%.  
+Вердикт: поддерживает H4 (автоматическая оценка с сильной LLM воспроизводит человеческие оценки с ошибкой менее 2%); поддерживает П3 (длинные ответы содержат смесь подтверждённых и неподтверждённых фрагментов, бинарные оценки качества неадекватны); уточняет П4 (проверка на уровне атомарных утверждений относительно источника как методика для CP_ent; цитирования как таковые не оцениваются).  
+Где пригодится: Метод (этап 6): CP_ent; Обзор §2.4.
+
+**119. Enabling Large Language Models to Generate Text with Citations** — Tianyu Gao et al., 2023, EMNLP 2023. [arXiv:2305.14627](https://arxiv.org/abs/2305.14627) · [DOI](https://doi.org/10.18653/v1/2023.emnlp-main.398) · [код](https://github.com/princeton-nlp/ALCE)  
+Суть: ALCE — первый бенчмарк генерации с цитированием: метрики беглости, корректности и качества цитирования (citation recall/precision через NLI), показана сильная корреляция с человеческими оценками; даже лучшие модели на ELI5 не дают полной поддержки цитатами в 50% случаев. Основа CP_id, CR_id, CP_ent.  
+Вердикт: поддерживает П3 (для оценки развёрнутых ответов с цитатами вводятся отдельные измерения корректности и цитирования вместо одной лексической метрики); поддерживает П4 (утверждение считается подтверждённым, если процитированный фрагмент влечёт его по NLI; автоматические метрики цитирования сильно коррелируют с человеческими суждениями).  
+Где пригодится: Метод (этап 6): CP_id, CR_id, CP_ent; Обзор §2.4.
+
+**120. MERA: A Comprehensive LLM Evaluation in Russian** — Alena Fenogenova et al., 2024, ACL 2024. [arXiv:2401.04531](https://arxiv.org/abs/2401.04531) · [код](https://github.com/ai-forever/MERA)  
+Суть: MERA — открытый инструкционный бенчмарк для русского языка: 21 задача в 11 доменах навыков, black-box-оценка в zero/few-shot, открытый код и лидерборд; открытые модели по данным авторов заметно отстают от человека. Фон для описания русскоязычных возможностей моделей из L.  
+Вердикт: нейтрально H1 (фон: стандартизованная оценка русскоязычных способностей фундаментальных моделей, без поиска).  
+Где пригодится: Обзор §2.4; Эксперименты: состав L.
+
+**121. The Russian-focused embedders' exploration: ruMTEB benchmark and Russian embedding model design** — Artem Snegirev et al., 2024, NAACL 2025. [arXiv:2408.12503](https://arxiv.org/abs/2408.12503)  
+Суть: ruMTEB — русскоязычное расширение MTEB с семью категориями задач (STS, классификация, реранжирование, поиск и др.) и модель ru-en-RoSBERTa, сопоставимая с лучшими русскоязычными эмбеддерами; основание для выбора энкодера на русской стороне (BERTScore, ретривер).  
+Вердикт: уточняет П3 (бенчмарк даёт сравнение русскоязычных и мультиязычных энкодеров на STS и поиске, что задаёт условия применимости эмбеддинговых метрик вроде BERTScore к русскоязычным ответам).  
+Где пригодится: Обзор §2.4; Метод (этап 6): BERTScore; Метод: выбор эмбеддера общего ретривера (H2, метрики поиска).
+
+**122. A review of faithfulness metrics for hallucination assessment in Large Language Models** — Ben Malin, Tatiana Kalganova, Nikoloas Boulgouris, 2024, IEEE JSTSP 2025. [arXiv:2501.00269](https://arxiv.org/abs/2501.00269) · [DOI](https://doi.org/10.1109/jstsp.2025.3579203)  
+Суть: Обзор способов оценки следования источнику (faithfulness) в открытой генерации: суммаризация, QA, перевод; вывод — LLM-оценщик обычно сильнее всего коррелирует с человеческими суждениями, а RAG и промптинг связаны с более высокой faithfulness.  
+Вердикт: поддерживает H1 (RAG связан с более высокой faithfulness ответов по сравнению с генерацией без поиска); поддерживает П3 (LLM как оценщик — метрика, наиболее коррелирующая с людьми для открытой генерации; оценка открытых ответов полнее, чем multiple-choice); поддерживает П4 (метрики следования источнику (в том числе с оценщиком-LLM) как основной инструмент оценки галлюцинаций в QA — обоснование CP_ent).  
+Где пригодится: Обзор §2.4.
+
+**123. Сравнительный анализ методов RAG для построения русскоязычных интеллектуальных сервисов (Comparative Analysis of RAG Methods for Building Russian-Speaking Intelligent Services)** — А. В. Мельников, И. Е. Николаев, 2025, Вестник ЮУрГУ. Серия «Компьютерные технологии, управление, радиоэлектроника», 2025. [DOI](https://doi.org/10.14529/ctcr250201)  
+Суть: Мельников и Николаев сравнивают подходы к построению RAG для русскоязычных задач (наивный RAG, HyDE, вероятностный) и отмечают почти полное отсутствие оценок RAG-поиска для русского языка.  
+Вердикт: уточняет П6 (поиск оценивается отдельно по mAP, связь с качеством генерации не проверяется — требуется отдельная проверка согласованности метрик поиска с итоговым качеством); нейтрально H3 (фон: сравнение методов поиска для русскоязычного RAG по mAP без оценки качества итоговых ответов).  
+Где пригодится: Введение: российский контекст; Обзор §2.4 (кратко).
+
+**124. Bi'an: A Bilingual Benchmark and Model for Hallucination Detection in Retrieval-Augmented Generation** — Zhouyu Jiang et al., 2025, arXiv preprint. [arXiv:2502.19209](https://arxiv.org/abs/2502.19209)  
+Суть: Bi'an — двуязычный (zh/en) бенчмарк и компактные судьи детекции галлюцинаций в RAG: модель 14B превосходит базовые в пять раз крупнее и сопоставима с закрытыми судьями.  
+Вердикт: поддерживает П9 (компактный открытый судья (14B), дообученный для детекции галлюцинаций в RAG, как альтернатива судье из числа оцениваемых моделей L); уточняет П4 (детекция неподдержанного источником содержания через специализированного LLM-судью на zh/en как альтернатива NLI-проверке CP_ent).  
+Где пригодится: Обзор §2.4; Метод (этап 7): выбор судьи.
+
+**125. REPA: Russian Error Types Annotation for Evaluating Text Generation and Judgment Capabilities** — Alexander Pugachev et al., 2025, arXiv preprint. [arXiv:2503.13102](https://arxiv.org/abs/2503.13102)  
+Суть: REPA — 1 тыс. русских запросов и 2 тыс. ответов с человеческой разметкой по десяти типам ошибок; восемь LLM-судей оценены по согласию с людьми и смещениям — качество судьи на русском заметно ниже, чем на английском.  
+Вердикт: поддерживает П7 (мета-оценка судей на русском); уточняет H4 (согласие судьи с людьми на русском ниже английского — порог ρ_S нужно проверять на русских ответах).  
+Где пригодится: Обзор §2.4; Метод (этап 7); Обсуждение.
+
+**126. Multilingual Retrieval-Augmented Generation for Knowledge-Intensive Task** — Leonardo Ranaldi, Barry Haddow, Alexandra Birch, 2025, Findings of EACL 2026. [arXiv:2504.03616](https://arxiv.org/abs/2504.03616) · [DOI](https://doi.org/10.18653/v1/2026.findings-eacl.35)  
+Суть: Сравнение стратегий мультиязычного RAG: перевод вопроса (tRAG) ограничивает охват, поиск сразу на нескольких языках (MultiRAG) эффективнее, но вносит кросс-языковые несогласованности выдачи.  
+Вердикт: уточняет H3 (эффект поиска зависит от языковой стратегии ретривера); уточняет П6 (выдача на нескольких языках может быть несогласованной).  
+Где пригодится: Обзор §2.4; Обсуждение: кросс-языковая постановка.
+
+**127. Building Russian Benchmark for Evaluation of Information Retrieval Models** — Grigory Kovalev et al., 2025, arXiv preprint. [arXiv:2504.12879](https://arxiv.org/abs/2504.12879)  
+Суть: RusBEIR — 17 датасетов для zero-shot оценки IR на русском; нейросетевые mE5-large и BGE-M3 лучше на большинстве датасетов, но BM25 остаётся сильным бейзлайном для длинных документов, а для лексических моделей на морфологически богатом русском важна предобработка.  
+Вердикт: поддерживает П6 (стандартные IR-метрики (по-BEIR) применимы к русскоязычному поиску и позволяют сопоставлять лексические и нейросетевые модели); уточняет H2 (выбор общего ретривера (BM25 vs mE5/BGE-M3) существенно влияет на результат, поэтому сравнение при общем ретривере зависит от того, какой ретривер выбран); уточняет П6 (результат ретривера зависит от предобработки и длины документов: нейросетевые модели проигрывают на длинных документах из-за ограничения входа — Hit@k/Recall@k относительно S*_i надо интерпретировать с учётом чанкинга).  
+Где пригодится: Обзор §2.4; Обсуждение: ретривер.
+
+**128. XRAG: Cross-lingual Retrieval-Augmented Generation** — Wei Liu et al., 2025, arXiv preprint. [arXiv:2505.10089](https://arxiv.org/abs/2505.10089)  
+Суть: XRAG — бенчмарк кросс-языкового RAG на свежих новостях, где язык пользователя не совпадает с языком выдачи; для каждого извлечённого документа дана разметка релевантности. На пяти LLM выявлены ошибки языка ответа при монолингвальном поиске и трудности рассуждения над разноязычными документами — ближайшая рамка для случая «русский q — китайские источники».  
+Вердикт: поддерживает H1 (вопросы построены по свежим новостям так, чтобы требовать внешних знаний, — именно здесь модели без поиска проигрывают); поддерживает П6 (разметка релевантности каждого извлечённого документа позволяет оценивать поиск отдельно от генерации, как S*_i); уточняет H3 (в кросс-языковом RAG модели ошибаются в языке ответа и хуже рассуждают над документами на другом языке — выигрыш от поиска зависит от языковой пары).  
+Где пригодится: Введение; Обзор §4; Обсуждение: кросс-языковая постановка.
+
+**129. Eye of Judgement: Dissecting the Evaluation of Russian-speaking LLMs with POLLUX** — Nikita Martynov et al., 2025, arXiv preprint. [arXiv:2505.24616](https://arxiv.org/abs/2505.24616)  
+Суть: POLLUX — открытый бенчмарк генеративных способностей русскоязычных LLM: критериальная оценка ответов LLM-судьёй с текстовым обоснованием, 35 типов задач, 2100 экспертных промптов и открытые судьи 7B/32B, заявленные как замена дорогих парных человеческих сравнений.  
+Вердикт: поддерживает П3 (развёрнутые генеративные ответы оцениваются LLM-судьёй по набору критериев с обоснованием, а не автоматически по совпадению с образцом); уточняет H4 (авторы заявляют, что обученный судья «эффективно заменяет» человеческую оценку, — это утверждение само нуждается в проверке согласия с людьми (ρ_S) на данных ВКР); нейтрально П9 (открытые русскоязычные судьи 7B/32B — возможные кандидаты на роль m_J, не входящие в число 13 оцениваемых систем; требование П9 статья не обсуждает).  
+Где пригодится: Обзор §2.4; Метод (этап 7): выбор судьи.
+
+**130. Correctness is not Faithfulness in Retrieval Augmented Generation Attributions** — Jonas Wallat et al., 2025, ICTIR 2025 (препринт arXiv:2412.18004, декабрь 2024). [DOI](https://doi.org/10.1145/3731120.3744592)  
+Суть: Валлат и соавторы различают правильность цитирования (цитируемый документ подтверждает утверждение) и достоверность цитирования (модель действительно опиралась на документ, а не рационализировала ответ из памяти) и показывают распространённость пост-рационализации.  
+Вердикт: уточняет H2 (при общем ретривере ответ может опираться на память модели, а не на выдачу); уточняет П4 (CP по следованию измеряет правильность, но не достоверность опоры на источник).  
+Где пригодится: Обзор §2.4 (метрики цитирования); Обсуждение: интерпретация метрик цитирования.
+
+**131. Linguistic Nepotism: Trading-off Quality for Language Preference in Multilingual RAG** — Dayeon Ki et al., 2025, arXiv preprint. [arXiv:2509.13930](https://arxiv.org/abs/2509.13930)  
+Суть: «Лингвистический непотизм»: в мультиязычном RAG при английских запросах модели предпочитают цитировать англоязычные документы (сильнее для низкоресурсных языков и документов в середине контекста) и иногда жертвуют релевантностью источника ради его языка.  
+Вердикт: уточняет H2 (при одной и той же выдаче ретривера разные генераторы по-разному цитируют документы на неанглийских языках, что влияет на сравнение при общем ретривере); уточняет П4 (выбор цитируемых документов смещён по языку источника при фиксированной релевантности — CP_id и CR_id стоит анализировать с разбивкой по языку документа).  
+Где пригодится: Обзор §2.4; Обсуждение.
+
+**132. ChiMDQA: Towards Comprehensive Chinese Document QA with Fine-grained Evaluation** — Jing Gao et al., 2025, arXiv preprint. [arXiv:2511.03656](https://arxiv.org/abs/2511.03656)  
+Суть: ChiMDQA — 6068 пар вопрос–ответ по длинным китайским документам шести доменов (включая новости) с десятью категориями вопросов и методикой отбора документов и построения вопросов.  
+Вердикт: уточняет П1 (китайский документный QA-ресурс (в т.ч. домен новостей) без метки временной инвариантности Inv(q) — нужна собственная разметка статичности); нейтрально П3 (фон: система тонкой (fine-grained) оценки по десяти категориям вопросов для китайского документного QA).  
+Где пригодится: Обзор §2.4; Метод (этап 1): построение эталонной выборки G — типология вопросов.
+
+**133. X-MADAM-RAG: Diagnosing and Handling Chinese-English Evidence Conflict in Retrieval-Augmented Generation** — Yongqi Kang, Yu Fu, Yong Zhao, 2026, arXiv preprint. [arXiv:2606.12903](https://arxiv.org/abs/2606.12903)  
+Суть: X-RAMDocs-ZHEN — контролируемый китайско-английский бенчмарк конфликтующих свидетельств в RAG (300 примеров, шесть условий) и конвейер X-MADAM-RAG с явной группировкой кандидатов; на исходном бенчмарке даже безмодельное правило даёт 1.0, а на натурализованном стресс-тесте точность конвейера падает до 0.30, так что авторы позиционируют работу лишь как диагностический инструмент.  
+Вердикт: уточняет П6 (китайские и английские документы в выдаче могут поддерживать несовместимые ответы, чего метрики Hit@k/Recall@k относительно S*_i не улавливают; узкое место — извлечение на уровне документа).  
+Где пригодится: Обзор §2.4; Обсуждение.
+
+**134. RusHallu-RAG: benchmarking hallucination detection for Russian RAG** — Fedor Sadkovskii, Regina Nasyrova, Alexey Sorokin, 2026, Компьютерная лингвистика и интеллектуальные технологии (Диалог), 2026 (DOI зарегистрирован в Crossref, на 24.09.2026 ещё не разрешается). [DOI](https://doi.org/10.29003/2075-7182-2026-24-516-534)  
+Суть: RusHallu-RAG — первый бенчмарк детекции галлюцинаций в русскоязычном RAG (1000 пар, шесть типов галлюцинаций, разметка людьми и LLM на уровне ответа и спана); масштаб модели не гарантирует качества детектора.  
+Вердикт: поддерживает П7 (качество 15 LLM-детекторов галлюцинаций измеряется относительно человеческой разметки на уровне ответа и спана); уточняет П4 (шесть типов расхождений ответа с извлечёнными документами (противоречие, неподтверждённость, пропуск, избыток, частичность, упущение) тоньше бинарного вывода NLI, лежащего в основе CP_ent).  
+Где пригодится: Обзор §2.4; Метод (этап 6): CP_ent.
+
+## 5. Статистика сравнения систем и надёжность оценки
+
+**135. The Proof and Measurement of Association between Two Things** — C. Spearman, 1904, The American Journal of Psychology. [DOI](https://doi.org/10.2307/1412159)  
+Суть: Спирмен ввёл коэффициент ранговой корреляции — меру монотонной связи двух переменных, используемую в работе для отбора метрик по согласию с человеческими оценками.  
+Вердикт: поддерживает П7 (ранговая корреляция измеряет монотонную связь и не требует линейности и интервальной шкалы оценок, что подходит для порядковых оценок людей и судьи); нейтрально H4 (даёт инструмент ρ_S(m_J^corr, h̄), которым проверяется H4, но сам по себе не свидетельствует о согласии судьи с людьми).  
+Где пригодится: Метод (этап 7): валидация M′; Постановка.
+
+**136. Individual Comparisons by Ranking Methods** — Frank Wilcoxon, 1945, Biometrics Bulletin. [DOI](https://doi.org/10.2307/3001968)  
+Суть: Уилкоксон предложил непараметрические ранговые критерии, в том числе критерий знаковых рангов для парных наблюдений — основной критерий значимости для парных разностей δ_i между системами.  
+Вердикт: поддерживает П8 (парный критерий без предположения о нормальности разностей).  
+Где пригодится: Метод (этап 9); Обзор §2.5.
+
+**137. A Simple Sequentially Rejective Multiple Test Procedure** — Sture Holm, 1979, Scandinavian Journal of Statistics. [OpenAlex](https://openalex.org/W2121044470) · [JSTOR](https://www.jstor.org/stable/4615733)  
+Суть: Хольм предложил последовательно отклоняющую процедуру, контролирующую групповую вероятность ошибки первого рода при множественных сравнениях и равномерно более мощную, чем поправка Бонферрони.  
+Вердикт: поддерживает П8 (контроль ошибки при 12 сравнениях с f_prod).  
+Где пригодится: Метод (этап 9); Обзор §2.5.
+
+**138. Bootstrap Methods: Another Look at the Jackknife** — B. Efron, 1979, The Annals of Statistics. [DOI](https://doi.org/10.1214/aos/1176344552)  
+Суть: Эфрон ввёл бутстреп — оценку распределения статистики повторной выборкой с возвращением; парный бутстреп по вопросам даёт доверительные интервалы для средней разности δ̄ и композита Q(f).  
+Вердикт: поддерживает П8 (оценка выборочного распределения статистики повторной выборкой с возвращением без параметрических предположений о F; парный вариант по вопросам даёт интервалы для средней разности δ̄).  
+Где пригодится: Метод (этап 9); Обзор §2.5.
+
+**139. Using statistical testing in the evaluation of retrieval experiments** — David Hull, 1993, SIGIR 1993. [DOI](https://doi.org/10.1145/160688.160758)  
+Суть: Халл разбирает применение статистических критериев к сравнению поисковых систем на общем наборе запросов и показывает, что различия средних precision/recall без проверки значимости ненадёжны; параметрические критерии требуют проверки нормальности, при её нарушении следует использовать непараметрические (в т.ч. знаковые ранги Уилкоксона).  
+Вердикт: поддерживает П8 (статистическая проверка значимости различий систем на общих запросах вместо сравнения средних; непараметрические парные критерии как альтернатива при нарушении нормальности); уточняет П8 (допущение нормальности для стандартных метрик, как правило, не выполняется и его нужно проверять диагностическими графиками перед выбором критерия).  
+Где пригодится: Обзор §2.5: статистика сравнения систем; Метод (этап 9): выбор критерия.
+
+**140. Dominance statistics: Ordinal analyses to answer ordinal questions.** — Norman Cliff, 1993, Psychological Bulletin. [DOI](https://doi.org/10.1037/0033-2909.114.3.494)  
+Суть: Клифф предлагает порядковую статистику доминирования d (δ) — разность вероятностей того, что наблюдение одной группы выше или ниже наблюдения другой; она робастнее сравнения средних, не менее мощна, инвариантна к монотонным преобразованиям и часто точнее соответствует исследовательской гипотезе, а выводы по ней следует строить на выборочной оценке её дисперсии.  
+Вердикт: поддерживает П8 (порядковая мера размера эффекта d (δ), робастная и инвариантная к преобразованиям, вместо сравнения средних для порядковых данных); уточняет П8 (доверительные выводы по δ должны опираться на выборочную оценку её дисперсии, а не на допущение одинаковых распределений).  
+Где пригодится: Метод (этап 9): размер эффекта; Обзор §2.5.
+
+**141. Statistical Significance Tests for Machine Translation Evaluation** — Philipp Koehn, 2004, EMNLP 2004. [ACL](https://aclanthology.org/W04-3250/)  
+Суть: Кён предложил применять бутстреп-ресемплинг по предложениям тестового набора для оценки значимости разности BLEU между двумя системами МП и эмпирически показал точность получаемых уровней значимости даже на малых наборах порядка 300 предложений; в работе метод перенесён на парные разности метрик по вопросам.  
+Вердикт: поддерживает П8 (парный бутстреп-ресемплинг по общим примерам тестового набора для значимости разности двух систем, валидированный эмпирически); уточняет П8 (метод даёт надёжные выводы уже при малых наборах порядка 300 примеров, что близко к n ≈ 200).  
+Где пригодится: Метод (этап 9); Обзор §2.5.
+
+**142. The Hitchhiker’s Guide to Testing Statistical Significance in Natural Language Processing** — Rotem Dror et al., 2018, ACL 2018. [DOI](https://doi.org/10.18653/v1/p18-1128)  
+Суть: Дрор и соавторы дают практический протокол выбора критерия значимости в NLP по типу метрики и распределению и показывают, что в статьях ACL/TACL проверка значимости часто игнорируется или применяется неверно.  
+Вердикт: поддерживает П8 (непараметрические парные критерии для метрик без нормальности).  
+Где пригодится: Обзор §2.5; Метод (этап 9).
+
+**143. Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations** — Evan Miller, 2024, arXiv preprint. [arXiv:2411.00640](https://arxiv.org/abs/2411.00640)  
+Суть: Миллер рассматривает оценку LLM как эксперимент над выборкой вопросов из суперпопуляции: формулы стандартных ошибок, парные сравнения моделей с учётом кластеризации и планирование размера оценки.  
+Вердикт: поддерживает П8 (парные сравнения на общих вопросах снижают дисперсию разности); уточняет П8 (планирование n по требуемой точности).  
+Где пригодится: Обзор §2.5; Метод (этап 9); Постановка: размер выборки.
+
+**144. Position: Don't Use the CLT in LLM Evals With Fewer Than a Few Hundred Datapoints** — Sam Bowyer, Laurence Aitchison, Desi R. Ivanova, 2025, arXiv preprint. [arXiv:2503.01747](https://arxiv.org/abs/2503.01747)  
+Суть: Позиционная статья: при менее чем нескольких сотнях примеров интервалы по ЦПТ резко занижают неопределённость (для бинарных метрик точности); вместо них рекомендованы точные частотные интервалы (Уилсона, Клоппера–Пирсона) и байесовские методы, тогда как наивный бутстреп на малых n даёт схожее с ЦПТ занижение.  
+Вердикт: уточняет П8 (при n порядка сотен нормальное приближение занижает неопределённость; n ≈ 200 лежит на границе, поэтому бутстреп-интервалы для метрик Q(f) следует проверять на покрытие или дополнять точными/байесовскими интервалами).  
+Где пригодится: Обзор §2.5; Метод (этап 9).
+
+**145. Noisy but Valid: Robust Statistical Evaluation of LLMs with Imperfect Judges** — Chen Feng et al., 2026, arXiv preprint. [arXiv:2601.20913](https://arxiv.org/abs/2601.20913)  
+Суть: «Noisy but Valid»: проверка гипотез о доле ошибок по меткам несовершенного LLM-судьи с калибровкой TPR/FPR на малой человеческой подвыборке и гарантией контроля ошибки первого рода.  
+Вердикт: поддерживает П7 (судью можно использовать статистически корректно, если откалибровать по людям); уточняет П8 (поправка дисперсии на шум судьи при проверке гипотез).  
+Где пригодится: Обзор §2.5; Метод (этап 7).
+
+## Приложение. Технические отчёты моделей (справочно)
+
+Отчёты о моделях не являются статьями по теме работы и не получают вердикта; они нужны для библиографии раздела «Оцениваемые системы» (множество $`\mathcal{L}`$ провайдера ИВ РАН и генератор промышленной системы $`f_{\text{prod}}`$). Две позиции без рецензируемой публикации помечены UNVERIFIED и цитируются как web-источники.
+
+| Модель | Год | Авторы | Отчёт | Код | Роль в работе |
+|---|:---:|---|:---:|:---:|---|
+| Qwen2.5 Technical Report | 2024 | Qwen Team | [arXiv:2412.15115](https://arxiv.org/abs/2412.15115) | [GitHub](https://github.com/QwenLM/Qwen2.5) | Китайское семейство открытых моделей предыдущего поколения |
+| Qwen3 Technical Report | 2025 | Qwen Team | [arXiv:2505.09388](https://arxiv.org/abs/2505.09388) | [GitHub](https://github.com/QwenLM/Qwen3) | Актуальное поколение; кандидаты в открытые бейзлайны $`\mathcal{L}`$ (у провайдера ИВ РАН — Qwen3.6-27B, Qwen3.8-27B) |
+| DeepSeek-V3 Technical Report | 2024 | DeepSeek-AI | [arXiv:2412.19437](https://arxiv.org/abs/2412.19437) | [GitHub](https://github.com/deepseek-ai/DeepSeek-V3) | MoE-модель на 671 млрд параметров |
+| DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning | 2025 | DeepSeek-AI | [arXiv:2501.12948](https://arxiv.org/abs/2501.12948) | [GitHub](https://github.com/deepseek-ai/DeepSeek-R1) | Reasoning-модель; дистиллят DeepSeek-R1-Distill-Qwen-32B фактически обслуживает прод-систему $`f_{\text{prod}}`$ — источник риска самопредпочтения судьи |
+| The Llama 3 Herd of Models | 2024 | Meta | [arXiv:2407.21783](https://arxiv.org/abs/2407.21783) | [GitHub](https://github.com/meta-llama/llama3) | Западный бейзлайн, слабее на китайском |
+| Llama 4 (Scout, Maverick) | 2025 | Meta | [web](https://www.llama.com/) | — | UNVERIFIED: рецензируемой публикации нет, только блог и model card; цитируется как web-источник |
+| ChatGLM: A Family of Large Language Models from GLM-130B to GLM-4 All Tools | 2024 | GLM Team | [arXiv:2406.12793](https://arxiv.org/abs/2406.12793) | [GitHub](https://github.com/THUDM/GLM-4) | Китайская альтернатива Qwen (у провайдера — GLM-4.1V-9B-Thinking) |
+| GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models | 2025 | GLM Team | [arXiv:2508.06471](https://arxiv.org/abs/2508.06471) | [GitHub](https://github.com/zai-org/GLM-4.5) | Свежий китайский флагман |
+| Yi: Open Foundation Models by 01.AI | 2024 | 01.AI | [arXiv:2403.04652](https://arxiv.org/abs/2403.04652) | [GitHub](https://github.com/01-ai/Yi) | Билингвальное (zh/en) семейство 6B–34B |
+| Gemma 3 Technical Report | 2025 | Gemma Team | [arXiv:2503.19786](https://arxiv.org/abs/2503.19786) | [GitHub](https://github.com/google-deepmind/gemma) | Лёгкие открытые модели с длинным контекстом |
+| Mistral 7B | 2023 | Mistral AI | [arXiv:2310.06825](https://arxiv.org/abs/2310.06825) | [GitHub](https://github.com/mistralai/mistral-inference) | Компактный бейзлайн; нижняя граница качества по китайскому |
+| GigaChat Family: Efficient Russian Language Modeling Through Mixture of Experts Architecture | 2025 | GigaChat team | [arXiv:2506.09440](https://arxiv.org/abs/2506.09440) | — | Российский флагман с публикацией (у провайдера — GigaChat-20B-A3B). ACL 2025 Demo |
+| Vikhr: The Family of Open-Source Instruction-Tuned Large Language Models for Russian | 2024 | Aleksandr Nikolich et al. | [arXiv:2405.13929](https://arxiv.org/abs/2405.13929) | — | Открытые русскоязычные instruction-tuned модели |
+| YandexGPT 5 (Pro / Lite) | 2025 | Яндекс | [web](https://habr.com/ru/companies/yandex/articles/885218/) | — | UNVERIFIED: рецензируемой публикации нет, только блог; исторически генератор прод-системы (по презентации 2025 года); цитируется как web-источник |

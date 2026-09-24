@@ -9,14 +9,20 @@ title: "Система оценки качества ответов больши
 abstract: >-
   Bachelor's thesis repository (Faculty of Computational Mathematics and Cybernetics,
   Lomonosov Moscow State University): a system for evaluating the quality of large language
-  model answers to time-invariant questions about East Asian news texts. It comprises a golden
-  set of questions with reference answers and supporting document identifiers built by
-  independent annotators with agreement control, a family of reference-based, citation,
-  abstention and retrieval metrics together with an LLM-judge rubric, a validation protocol
-  against human ratings, and a statistical comparison of a production retrieval-augmented
-  system with open models with and without retrieval. The current corpus is Chinese-language
-  media (PRC, Taiwan, Hong Kong, Singapore); extension to Japanese and Korean sources is
-  future work.
+  model answers to questions about East Asian news texts in a cross-lingual setting (questions
+  in Russian, sources in Chinese-language media). The object of measurement is the answer to a
+  question about a frozen corpus snapshot, not the model. The system comprises a formal problem
+  statement with a time-invariance predicate that restricts the golden set to static questions;
+  a golden set of at least 150 questions (including questions whose correct answer is an
+  abstention) with reference answers, aliases and supporting document identifiers, annotated
+  independently by three annotators with Krippendorff's alpha of at least 0.67; a family of
+  reference-based, citation, abstention and retrieval metrics including a language-model judge
+  that is meta-evaluated separately for reliability and validity (Spearman correlation with
+  human ratings of at least 0.5); and a statistical protocol (paired bootstrap, Wilcoxon
+  signed-rank test with Holm correction, Cliff's delta) for comparing a production
+  retrieval-augmented system with six open models with and without retrieval. The current corpus
+  is Chinese-language media (PRC, Taiwan, Hong Kong, Singapore); extension to Japanese and Korean
+  sources is future work.
 authors:
   - family-names: Bagrov
     given-names: Alexander
@@ -35,9 +41,12 @@ keywords:
   - golden set
   - question answering
   - time-invariant questions
+  - cross-lingual retrieval
   - Chinese news
   - East Asia
   - inter-annotator agreement
+  - judge meta-evaluation
+  - self-preference
   - Krippendorff's alpha
 references:
   # Объект исследования: промышленная система «Chinese Media Analysis» (ivran-lab/chinese-media).
