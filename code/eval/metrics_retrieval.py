@@ -1,14 +1,14 @@
-r"""Метрики компонента $\rho$ (поиск) относительно $S^*_i$.
+r"""Метрики компонента $\rho_{\mathrm{prod}}$ (поиск) относительно $S^*_i$.
 
 Вход — ранжированный список идентификаторов ``ranked_ids`` $= (\iota_1, \iota_2, \dots)$,
-выданный ретривером (для $f_{\mathrm{prod}}$ — из ответа API, для $f_\rho^{(m)}$ — из кэша,
+выданный ретривером (для $f_{\mathrm{prod}}$ — из ответа API, для $f_\rho^{(\ell)}$ — из кэша,
 совпадает с $f_{\mathrm{prod}}$), и эталон $S^*_i \subset \mathcal{I}$, $|S^*_i| \ge 1$.
-Релевантность бинарная: $\mathrm{rel}_j = \mathbb{1}[\iota_j \in S^*_i]$.
+Релевантность бинарная: $\mathrm{rel}_j = \mathbb{I}[\iota_j \in S^*_i]$.
 
-Правило NA: для систем без поиска ($f_0^{(m)}$, ``ranked_ids`` пуст по конструкции)
-и для записей $G^{\varnothing}$ ($S^*_i = \varnothing$) метрики равны ``None``.
+Правило NA: для систем без поиска ($f_0^{(\ell)}$, ``ranked_ids`` пуст по конструкции)
+и для записей $G^{\bot}$ ($S^*_i = \varnothing$) метрики равны ``None``.
 Пустая выдача ретривера при $S^*_i \ne \varnothing$ — 0, а не NA.
-Идентификаторы в списке — на уровне документа (``webpage_id``); чанки одного документа
+Идентификаторы в списке — на уровне документа (``webpage_id``); фрагменты одного документа
 схлопываются с сохранением лучшей позиции.
 """
 
@@ -18,7 +18,7 @@ from typing import Sequence
 
 
 def hit_at_k(ranked_ids: Sequence[int] | None, relevant_ids: set[int], k: int) -> float | None:
-    r"""$\mathrm{Hit@}k = \mathbb{1}\left[\exists\, j \le k : \iota_j \in S^*_i\right]$."""
+    r"""$\mathrm{Hit@}k = \mathbb{I}\left[\exists\, j \le k : \iota_j \in S^*_i\right]$."""
     raise NotImplementedError("реализация — часть работы")
 
 

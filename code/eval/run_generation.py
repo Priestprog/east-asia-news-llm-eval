@@ -11,7 +11,7 @@ r"""Прогон системы $f \in \mathcal{H}_{\mathrm{eval}}$ на split G
 Условия воспроизводимости: ``temperature = 0``, фиксированный ``seed``; fail-fast при
 неизвестной модели (``UnknownModelError``) — прогон прерывается, частичный результат
 помечается ``meta.json['status'] = 'aborted'``. Для $f_{\mathrm{prod}}$ выдача ретривера
-пишется в кэш (``RetrieverCache``) для последующих прогонов $f_\rho^{(m)}$.
+пишется в кэш (``RetrieverCache``) для последующих прогонов $f_\rho^{(\ell)}$.
 """
 
 from __future__ import annotations

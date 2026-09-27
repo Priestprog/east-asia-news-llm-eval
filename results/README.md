@@ -10,12 +10,12 @@
 
 | Файл | Содержимое |
 |---|---|
-| `generations.jsonl` | по строке на вопрос: `question_id, system_id, answer` (`null` — отказ), `cited_ids` ($`\hat S`$, `webpage_id`), `retrieved_ids` (ранжированная выдача $`\rho`$), `model_reported` (поле `model` ответа провайдера), `latency_s, raw, created_at` |
+| `generations.jsonl` | по строке на вопрос: `question_id, system_id, answer` (`null` — отказ), `cited_ids` ($`\hat S`$, `webpage_id`), `retrieved_ids` (ранжированная выдача $`\rho_{\mathrm{prod}}`$), `model_reported` (поле `model` ответа провайдера), `latency_s, raw, created_at` |
 | `judge.jsonl` | по строке на вопрос: `question_id, system_id, scores{<измерение>: 0..5 | null}, rationales, extra, judge_model_reported, judge_prompt_version, raw` |
 | `meta.json` | паспорт прогона: `run_id`; `system` — паспорт системы (`system_id, kind, retriever, model_id, quantization, k, m, threshold, temperature, seed, prompt_version`); `git_sha` репозитория; `models_snapshot` — ответ `/v1/models` провайдера до прогона; `golden_set` — путь, версия, sha256, split, $`n`$; `date`; `packages` — версии ключевых пакетов; `status` (`completed` / `aborted`); блок `judge` после `make judge` |
 
 `results/runs/_retriever_cache/prod.jsonl` — кэш выдачи $`\rho_{\mathrm{prod}}`$, заполняемый прогоном
-$`f_{\mathrm{prod}}`$ и читаемый системами $`f_\rho^{(m)}`$ (тоже не в git).
+$`f_{\mathrm{prod}}`$ и читаемый системами $`f_\rho^{(\ell)}`$ (тоже не в git).
 
 Сырые генерации публикуются отдельно как приложение к работе (архив с указанием `git_sha`
 и sha256 Golden Set); полные тексты документов корпуса не публикуются.
@@ -26,8 +26,8 @@ $`f_{\mathrm{prod}}`$ и читаемый системами $`f_\rho^{(m)}`$ (�
 |---|---|
 | `main_table.md` | широкая таблица: строки — системы, столбцы — метрики $`m_k \in M'`$ в виде `mean [lo; hi]`, звёздочка при $`p_{\mathrm{Holm}} < 0.05`$ относительно $`f_{\mathrm{prod}}`$, последние столбцы — $`Q(f)`$ и ранг; подпись — split, $`n`$, $`B`$, дата, `git_sha` |
 | `main_table_long.csv` | длинный формат, по строке на (система, метрика); столбцы — ниже |
-| `validation.csv` | валидация метрик: `metric, rho_spearman, ci_low, ci_high, n_pairs, passed` (порог $`\rho_{\min} = 0.5`$), потолок — среднее попарное согласие людей, Krippendorff $`\alpha`$ разметчиков, решение о первичной метрике |
-| `stats.csv` | парные сравнения с $`f_{\mathrm{prod}}`$ по первичной метрике: $`\bar\delta`$ с бутстреп-интервалом, $`p`$ Уилкоксона, $`\tilde p`$ Холма, Cliff's $`\delta`$ |
+| `validation.csv` | валидация метрик: `metric, rho_spearman, ci_low, ci_high, n_pairs, passed` (порог $`r_{\min} = 0.5`$), потолок — среднее попарное согласие людей, $`\alpha`$ Криппендорфа аннотаторов, решение о первичной метрике |
+| `stats.csv` | парные сравнения с $`f_{\mathrm{prod}}`$ по первичной метрике: $`\bar\delta`$ с бутстреп-интервалом, $`p`$ Уилкоксона, $`\tilde p`$ Холма, $`\Delta_{\mathrm{C}}`$ Клиффа |
 
 Столбцы `main_table_long.csv` (схема из постановки задачи):
 

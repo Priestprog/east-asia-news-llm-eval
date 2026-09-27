@@ -1,8 +1,8 @@
-r"""$f_{\mathrm{prod}} = g_{\theta_{\mathrm{prod}}} \circ \rho_{\mathrm{prod}}$ — промышленная система через HTTP API.
+r"""$f_{\mathrm{prod}}(q) = g_{\mathrm{prod}}(q, \rho_{\mathrm{prod}}(q))$ — промышленная система через HTTP API.
 
 Объект исследования — система «Chinese Media Analysis» (ivran-lab/chinese-media):
-ретривер $\rho_{\mathrm{prod}}$ = Qdrant (k чанков, m уникальных веб-страниц, порог
-косинусной близости) + SearchAPI, генератор $g_{\theta_{\mathrm{prod}}}$ — модель
+ретривер $\rho_{\mathrm{prod}}$ = Qdrant (k фрагментов, m уникальных веб-страниц, порог
+косинусной близости) + SearchAPI, генератор $g_{\mathrm{prod}}$ (фактическая модель $\ell_{\mathrm{prod}}$ — по полю ``model``) — модель
 провайдера ИВ РАН. Ответ содержит инлайн-цитаты ``(N)`` и ``source_map`` с URL;
 отказ — строка «Я не знаю.».
 
@@ -22,7 +22,7 @@ INLINE_CITATION = re.compile(r"\((\d{1,3})\)")
 
 
 def detect_abstention(text: str | None, marker: str = ABSTENTION_MARKER) -> bool:
-    r"""Признак отказа $\hat a = \varnothing$.
+    r"""Признак отказа $\hat a = \bot$.
 
     Отказом считается пустой ответ либо ответ, нормализованная форма которого совпадает
     с маркером «Я не знаю.» или начинается с него (модель иногда добавляет пояснение).
@@ -57,8 +57,8 @@ def resolve_citations(
 class ProdApiSystem(System):
     r"""Обёртка над HTTP API промышленной системы (``kind: prod_api``).
 
-    Конфигурация: ``base_url``, ``retriever``, ``k``, ``m``, ``threshold`` (в API прода поле
-    ``treshold``), ``deep_search``, ``num_docs``, ``temperature``, ``prompt_version``,
+    Конфигурация: ``base_url``, ``retriever``, ``top_k``, ``max_pages``, ``threshold`` (в API прода поля
+    ``k``, ``m``, ``treshold``), ``deep_search``, ``num_docs``, ``temperature``, ``prompt_version``,
     ``generator.expected_model``, ``fail_fast_on_unknown_model``.
     """
 

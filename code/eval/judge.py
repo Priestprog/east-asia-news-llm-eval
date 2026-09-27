@@ -4,16 +4,16 @@ r"""Судья-LLM: рубрика из 8 измерений по шкале 0�
 
 * $m_J^{\mathrm{corr}}$ — «правильность относительно $A^*_i$» (``correctness_vs_reference``):
   **новое измерение**, у существующей рубрики его нет; кандидат на первичную метрику
-  (гипотеза $H_4$: $\rho_S(m_J^{\mathrm{corr}}, \bar h) \ge 0.5$);
+  (гипотеза $H_4$: $r_S(m_J^{\mathrm{corr}}, \bar h) \ge 0.5$);
 * $m_J^{(d)}$, $d \in$ {faithfulness, answer_relevancy, completeness, citation_accuracy,
   temporal_correctness, allegory_idiom_quality, hallucination_abstention} — существующая
   рубрика ``production/backend/evaluation/judge/rubric.py`` репозитория ivran-lab/chinese-media
   (прототип автора, не запускавшийся и не валидированный) — кандидатное подсемейство $M$.
 
-Ограничения постановки: судья $\notin \mathcal{L} \cup \{g_{\theta_{\mathrm{prod}}}\}$ либо ансамбль двух
+Ограничения постановки: судья $\ell_J \notin \mathcal{L} \cup \{\ell_{\mathrm{prod}}\}$ либо ансамбль двух
 судей; ``temperature = 0``; отчёт о собственной воспроизводимости; отдельная проверка
 самопредпочтения ($H_5$). Правило NA: измерение, требующее эталона, не вычисляется на
-$G^{\varnothing}$; измерения, требующие контекстов, — для $f_0^{(m)}$ (``None``).
+$G^{\bot}$; критерии, требующие контекстов, — для $f_0^{(\ell)}$ (``None``).
 Балл вне шкалы или неразобранный JSON → ``None`` с записью в ``raw['parse_error']``.
 """
 
@@ -76,7 +76,7 @@ class Judge:
         return score / SCALE_MAX
 
     def assert_not_in_candidates(self, candidate_models: Sequence[str], prod_generator: str | None) -> None:
-        r"""Проверка ограничения судья $\notin \mathcal{L} \cup \{g_{\theta_{\mathrm{prod}}}\}$ до прогона."""
+        r"""Проверка ограничения $\ell_J \notin \mathcal{L} \cup \{\ell_{\mathrm{prod}}\}$ до прогона."""
         raise NotImplementedError("реализация — часть работы")
 
     def applicable_dimensions(self, golden_item: Mapping[str, Any], has_contexts: bool) -> list[str]:
@@ -111,6 +111,6 @@ class Judge:
         raise NotImplementedError("реализация — часть работы")
 
     def reproducibility_report(self, items: Sequence[Mapping[str, Any]], n_repeats: int = 3) -> dict:
-        r"""Собственная воспроизводимость судьи: доля точных совпадений баллов и Krippendorff $\alpha$
+        r"""Собственная воспроизводимость судьи: доля точных совпадений баллов и $\alpha$ Криппендорфа: $\alpha$
         (interval) между повторами при ``temperature = 0`` на выборке из ``reproducibility.sample_size`` пар."""
         raise NotImplementedError("реализация — часть работы")

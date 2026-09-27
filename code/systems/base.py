@@ -31,14 +31,14 @@ class SystemOutput:
     r"""Выход системы $f(q) = (\hat a, \hat S)$ плюс служебные поля.
 
     Attributes:
-        answer: текст ответа $\hat a \in \mathcal{A}^+$ или ``None`` при отказе $\hat a = \varnothing$.
+        answer: текст ответа $\hat a \in \mathcal{A}^+$ или ``None`` при отказе $\hat a = \bot$.
         cited_ids: $\hat S \subset \mathcal{I}$ — идентификаторы ``webpage_id`` процитированных
             документов (инлайн-цитаты ``(N)`` переведены через ``source_map`` → URL → ``webpage_id``).
             Для систем без поиска $\hat S = \varnothing$.
         raw: сырой ответ провайдера или API прода (для воспроизводимости и разбора инцидентов).
         model_reported: значение поля ``model`` в ответе провайдера — фактически отработавшая модель.
-        retrieved_ids: ранжированный список идентификаторов, выданных компонентом $\rho$
-            (нужен для Hit@k, Recall@k, MRR, nDCG@k); пустой список для $f_0^{(m)}$.
+        retrieved_ids: ранжированный список идентификаторов, выданных компонентом $\rho_{\mathrm{prod}}$
+            (нужен для Hit@K, Recall@K, MRR, nDCG@K); пустой список для $f_0^{(\ell)}$.
         latency_s: время ответа в секундах.
     """
 
@@ -51,7 +51,7 @@ class SystemOutput:
 
     @property
     def is_abstention(self) -> bool:
-        r"""Истина, если $\hat a = \varnothing$."""
+        r"""Истина, если $\hat a = \bot$."""
         return self.answer is None
 
     def to_record(self) -> dict:
@@ -70,7 +70,7 @@ class System(ABC):
     r"""Абстрактная оцениваемая система $f \in \mathcal{H}$.
 
     Конкретные реализации: ``ProdApiSystem`` ($f_{\mathrm{prod}}$) и ``OpenAICompatSystem``
-    ($f_0^{(m)}$ при ``retriever: none``, $f_\rho^{(m)}$ при ``retriever: cached_prod``).
+    ($f_0^{(\ell)}$ при ``retriever: none``, $f_\rho^{(\ell)}$ при ``retriever: cached_prod``).
     """
 
     kind: str = "abstract"
@@ -85,7 +85,7 @@ class System(ABC):
 
         Args:
             question: текст вопроса $q \in \mathcal{Q}$ (русский).
-            question_id: идентификатор записи Golden Set — ключ кэша ретривера для $f_\rho^{(m)}$.
+            question_id: идентификатор записи Golden Set — ключ кэша ретривера для $f_\rho^{(\ell)}$.
 
         Raises:
             UnknownModelError: если ``fail_fast_on_unknown_model`` и модель ответа не совпала с запрошенной.
@@ -94,7 +94,7 @@ class System(ABC):
     def describe(self) -> dict:
         """Паспорт системы для ``meta.json``: параметры, влияющие на воспроизводимость."""
         keys = (
-            "system_id", "kind", "retriever", "model_id", "quantization", "k", "m", "threshold",
+            "system_id", "kind", "retriever", "model_id", "quantization", "top_k", "max_pages", "threshold",
             "deep_search", "num_docs", "temperature", "max_tokens", "seed", "prompt_version",
         )
         return {key: self.config.get(key) for key in keys if key in self.config or key == "kind"} | {

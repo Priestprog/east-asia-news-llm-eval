@@ -2,7 +2,7 @@
 
 Программный каркас ВКР «Система оценки качества ответов больших языковых моделей по новостным
 текстам стран Восточной Азии». Здесь живут три пакета: построение эталонной выборки
-$`G = G^+ \sqcup G^{\varnothing}`$, обёртки оцениваемых систем $`\mathcal{H}_{\mathrm{eval}}`$
+$`G = G^+ \sqcup G^{\bot}`$, обёртки оцениваемых систем $`\mathcal{H}_{\mathrm{eval}}`$
 и семейство метрик $`M`$ с валидацией, статистикой и отчётными таблицами. Обозначения совпадают
 с постановкой задачи в `README.md` репозитория и `docs/problem_statement.md`.
 
@@ -39,7 +39,7 @@ pip install -r requirements.txt
 | `IVRAN_LLM_API_KEY` | ключ провайдера |
 | `IVRAN_LLM_MODEL` | модель генератора промышленной системы (ожидаемая; фактическая берётся из поля `model` ответа) |
 | `JUDGE_LLM_MODEL` | модель-судья; должна быть вне $`\mathcal{L}`$ и не совпадать с генератором прода |
-| `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION` | векторная база корпуса (23,9 млн чанков) — для пересечения с `webmedia` и снимка $`\mathcal{I}`$ |
+| `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION` | векторная база корпуса (23,9 млн фрагментов) — для пересечения с `webmedia` и снимка $`\mathcal{I}`$ |
 | `WEBMEDIA_POSTGRES_HOST`, `WEBMEDIA_POSTGRES_PORT` | PostgreSQL с таблицей `webmedia.webpages` (метаданные документов, `webpage_id`, `urn_uuid`, `uri`) |
 | `WEBMEDIA_CC_NEWS_USER`, `WEBMEDIA_CC_NEWS_USER_PASSWORD`, `WEBMEDIA_CC_NEWS_DB_NAME` | учётные данные и имя базы `webmedia` |
 | `PROD_API_BASE_URL` | HTTP API промышленной системы «Chinese Media Analysis» ($`f_{\mathrm{prod}}`$) |
@@ -70,23 +70,23 @@ PROD_API_BASE_URL=http://localhost:10090
 code/
 ├── __init__.py                  # load_config(): YAML + подстановка ${VAR}
 ├── configs/
-│   ├── eval.yaml                # пути, первичная метрика, B, α, Холм, ρ_min, α_min, seed, split, список M
-│   ├── judge.yaml               # судья: модель (∉ L), temperature 0, рубрика из 8 измерений
+│   ├── eval.yaml                # пути, первичная метрика, B, significance_level, Холм, r_s_min, krippendorff_alpha_min, seed, split, список M
+│   ├── judge.yaml               # судья: модель (∉ L), temperature 0, рубрика из 8 критериев
 │   └── systems/
-│       ├── prod.yaml            # f_prod: prod_api, qdrant+searchapi, k=5, m=3, threshold=0.3
-│       ├── open_closed_book.yaml    # f_0^{(m)}: openai_compat, retriever none
-│       └── open_with_retrieval.yaml # f_ρ^{(m)}: openai_compat, retriever cached_prod
+│       ├── prod.yaml            # f_prod: prod_api, qdrant+searchapi, top_k=5, max_pages=3, threshold=0.3
+│       ├── open_closed_book.yaml    # f_0^{(ℓ)}: openai_compat, retriever none
+│       └── open_with_retrieval.yaml # f_ρ^{(ℓ)}: openai_compat, retriever cached_prod
 ├── annotation/                  # построение G
 │   ├── sample_documents.py      # стратифицированный отбор webmedia ∩ Qdrant, снимок D_{t0}
-│   ├── generate_drafts.py       # черновики (q, a, S, evidence, тип, дата) моделью g_draft ∉ L; seed pool
-│   ├── export_sheets.py         # листы для R=3 разметчиков и для человеческой валидации h
+│   ├── generate_drafts.py       # черновики (q, a, S, evidence, тип, дата) генератором g_draft на модели ℓ_draft ∉ L; seed pool
+│   ├── export_sheets.py         # листы для R=3 аннотаторов и для человеческой валидации h
 │   ├── agreement.py             # krippendorff_alpha, fleiss_kappa, pairwise_answer_f1
 │   ├── adjudicate.py            # расхождения → четвёртый эксперт
 │   └── build_golden_set.py      # JSONL по schema.json, split dev/test, sha256
 ├── systems/                     # H_eval
 │   ├── base.py                  # System.answer(question) -> SystemOutput(answer, cited_ids, raw, model_reported)
 │   ├── prod_api.py              # f_prod через HTTP API прода; разбор (N) и source_map
-│   ├── openai_compat.py         # f_0^{(m)} и f_ρ^{(m)} через OpenAI-совместимый API
+│   ├── openai_compat.py         # f_0^{(ℓ)} и f_ρ^{(ℓ)} через OpenAI-совместимый API
 │   └── retriever_cache.py       # кэш выдачи ρ_prod для абляции «модель против ретривера»
 ├── eval/                        # M, судья, валидация, статистика, таблицы
 │   ├── metrics_reference.py     # exact_match, token_f1, bertscore_f1, cosine_similarity
@@ -116,12 +116,12 @@ $`\bar m_k(f)`$ идёт по $`I_k(f) = \{i : m_k \ne \mathrm{NA}\}`$.
 | Цель | Что делает |
 |---|---|
 | `make drafts` | отбор документов, черновики моделью $`g_{\mathrm{draft}}`$, листы разметки |
-| `make agreement` | Krippendorff $`\alpha`$, Fleiss $`\kappa`$, попарный F1 ответов разметчиков |
+| `make agreement` | $`\alpha`$ Криппендорфа, Fleiss $`\kappa`$, попарный F1 ответов аннотаторов |
 | `make build-gs` | адъюдикация и сборка Golden Set версии `GS_VERSION` (JSONL, sha256) |
 | `make run SYSTEM=code/configs/systems/prod.yaml` | генерации системы на split из `eval.yaml` |
 | `make judge RUN_ID=<run_id>` | оценка генераций судьёй |
-| `make validate` | отбор $`M'`$ по согласию с разметчиками → `results/tables/validation.csv` |
-| `make stats` | парный бутстреп, Уилкоксон, Холм, Cliff's $`\delta`$ относительно $`f_{\mathrm{prod}}`$ |
+| `make validate` | отбор $`M'`$ по согласию с аннотаторами → `results/tables/validation.csv` |
+| `make stats` | парный бутстреп, Уилкоксон, Холм, $`\Delta_{\mathrm{C}}`$ Клиффа относительно $`f_{\mathrm{prod}}`$ |
 | `make tables` | `results/tables/main_table.md`, `main_table_long.csv` |
 | `make check` | `py_compile` всех модулей, импорт пакетов, валидация JSON и YAML |
 
@@ -132,4 +132,4 @@ make check PYTHON=code/.venv/bin/python
 ```
 
 Порядок для полного эксперимента: `drafts → agreement → build-gs → run` (сначала `prod.yaml`,
-он заполняет кэш ретривера; затем `open_*.yaml` для каждой $`m \in \mathcal{L}`$) `→ judge → validate → stats → tables`.
+он заполняет кэш ретривера; затем `open_*.yaml` для каждой $`\ell \in \mathcal{L}`$) `→ judge → validate → stats → tables`.

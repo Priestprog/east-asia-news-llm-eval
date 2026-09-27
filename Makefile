@@ -21,14 +21,14 @@ RUN_ID       ?= $(shell date +%Y%m%d-%H%M%S)-$(notdir $(basename $(SYSTEM)))
 help: ## список целей
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
 
-# --- Построение эталонной выборки G = G+ ⊔ G∅ -------------------------------------------
+# --- Построение эталонной выборки G = G+ ⊔ G⊥ -------------------------------------------
 
-drafts: ## отбор документов webmedia ∩ Qdrant, черновики моделью g_draft ∉ L, листы для R=3 разметчиков
+drafts: ## отбор документов webmedia ∩ Qdrant, черновики генератором g_draft на модели ℓ_draft ∉ L, листы для R=3 аннотаторов
 	$(PYTHON) -m code.annotation.sample_documents --config $(EVAL_CONFIG)
 	$(PYTHON) -m code.annotation.generate_drafts --config $(EVAL_CONFIG)
 	$(PYTHON) -m code.annotation.export_sheets --config $(EVAL_CONFIG)
 
-agreement: ## согласие разметчиков: Krippendorff α (≥0.67 допустимо, ≥0.8 надёжно), Fleiss κ, попарный F1 ≥ 0.8
+agreement: ## согласие аннотаторов: α Криппендорфа (≥0.67 допустимо, ≥0.8 надёжно), Fleiss κ, попарный F1 ≥ 0.8
 	$(PYTHON) -m code.annotation.agreement --config $(EVAL_CONFIG)
 
 build-gs: ## адъюдикация расхождений и сборка Golden Set версии GS_VERSION (JSONL по schema.json, split, sha256)
@@ -40,15 +40,15 @@ build-gs: ## адъюдикация расхождений и сборка Golde
 run: ## генерации системы SYSTEM на split из eval.yaml → results/runs/RUN_ID/{generations.jsonl, meta.json}
 	$(PYTHON) -m code.eval.run_generation --config $(EVAL_CONFIG) --system $(SYSTEM) --run-id $(RUN_ID)
 
-judge: ## оценка генераций прогона RUN_ID судьёй (рубрика из 8 измерений) → results/runs/RUN_ID/judge.jsonl
+judge: ## оценка генераций прогона RUN_ID судьёй ℓ_J (рубрика из 8 критериев) → results/runs/RUN_ID/judge.jsonl
 	$(PYTHON) -m code.eval.run_judge --config $(EVAL_CONFIG) --judge-config $(JUDGE_CONFIG) --run-id $(RUN_ID)
 
 # --- Валидация метрик, статистика, таблицы -----------------------------------------------
 
-validate: ## отбор M' = {m_k : ρ_S(m_k, h̄) ≥ rho_min} по человеческим оценкам → results/tables/validation.csv
+validate: ## отбор M' = {m_k : r_S(m_k, h̄) ≥ r_s_min} ∪ M_det по человеческим оценкам → results/tables/validation.csv
 	$(PYTHON) -m code.eval.validate_metrics --config $(EVAL_CONFIG)
 
-stats: ## парный бутстреп (B=10^4), Уилкоксон, поправка Холма (α=0.05), Cliff's δ для всех f' ≠ f_prod
+stats: ## парный бутстреп (B=10^4), двусторонний Уилкоксон, Холм (significance_level=0.05, четыре семьи), Δ_C Клиффа: f' ≠ f_prod и пары (f_ρ^{(ℓ)}, f_0^{(ℓ)})
 	$(PYTHON) -m code.eval.stats --config $(EVAL_CONFIG)
 
 tables: ## results/tables/main_table.md и main_table_long.csv (mean [lo; hi], звёздочка при p_Holm < 0.05, Q(f), ранг)

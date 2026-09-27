@@ -36,7 +36,7 @@ def connect_webmedia():
 
 
 def intersect_with_qdrant(conn, qdrant_client, collection: str) -> list[DocumentRef]:
-    r"""Возвращает документы, у которых хотя бы один чанк присутствует в коллекции Qdrant.
+    r"""Возвращает документы, у которых хотя бы один фрагмент присутствует в коллекции Qdrant.
 
     Даёт множество $\mathcal{I}$ снимка: только эти документы могут входить в $S^*_i$.
     """

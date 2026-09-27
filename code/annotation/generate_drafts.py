@@ -5,10 +5,10 @@ r"""Черновики записей Golden Set моделью $g_{\mathrm{draf
 вопрос на русском с явной датой-якорем, канонический ответ и алиасы, идентификаторы
 подтверждающих документов $S \subset \mathcal{I}$, короткие evidence-span (ru и zh),
 тип вопроса и предварительную метку инвариантности. Черновик — только заготовка для
-разметчиков; в $G$ он попадает после независимой разметки и согласия.
+аннотаторов; в $G$ он попадает после независимой разметки и согласия.
 
-Отдельно генерируются кандидаты в $G^{\varnothing}$ — вопросы, инвариантные по форме,
-но не подтверждаемые корпусом ($n_\varnothing \approx 0.1\,n$; правильный ответ — отказ).
+Отдельно генерируются кандидаты в $G^{\bot}$ — вопросы, инвариантные по форме,
+но не подтверждаемые корпусом ($n_{\bot} \approx 0.1\,n$; правильный ответ — отказ).
 
 Старые 388 вопросов (``EN_rag_questions.json`` / ``RU_rag_questions.json`` прод-репозитория)
 используются как seed pool после перекладки ``warc_id`` → ``webpage_id``; эталонных
@@ -30,7 +30,7 @@ class Draft:
 
     draft_id: str
     question_ru: str
-    answer_canonical: str | None          # None — кандидат в G∅
+    answer_canonical: str | None          # None — кандидат в G⊥
     answer_aliases: list[str] = field(default_factory=list)
     answer_type: str = "entity"           # entity | date | number | short_text | ...
     supporting_ids: list[int] = field(default_factory=list)   # S ⊂ I
@@ -40,7 +40,7 @@ class Draft:
     category: str | None = None
     anchor_date: str | None = None        # дата-якорь в вопросе
     requires_multi_doc: bool = False
-    answerable: bool = True               # False — кандидат в G∅
+    answerable: bool = True               # False — кандидат в G⊥
     draft_model: str = ""
     draft_prompt_id: str = "draft-v1"
     seed_pool_ref: str | None = None      # ссылка на запись seed pool, если черновик из неё
@@ -74,7 +74,7 @@ def generate_drafts(
 
 
 def generate_unanswerable_drafts(docs: Sequence[DocumentRef], client, model: str, n: int) -> list[Draft]:
-    r"""Кандидаты в $G^{\varnothing}$: вопросы с датой-якорем о событиях, отсутствующих в корпусе
+    r"""Кандидаты в $G^{\bot}$: вопросы с датой-якорем о событиях, отсутствующих в корпусе
     (проверяется поиском по Qdrant: ни один документ не подтверждает ответ)."""
     raise NotImplementedError("реализация — часть работы")
 

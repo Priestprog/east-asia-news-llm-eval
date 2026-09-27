@@ -11,18 +11,18 @@ abstract: >-
   Lomonosov Moscow State University): a system for evaluating the quality of large language
   model answers to questions about East Asian news texts in a cross-lingual setting (questions
   in Russian, sources in Chinese-language media). The object of measurement is the answer
-  a = f(q), where q is a frozen snapshot of the corpus, not the model that produced it. The
+  f(q) = (a, S), the text and the set of cited documents, to a question q about a frozen
+  corpus snapshot D_t0, not the model that produced it. The
   system comprises a formal problem statement with a time-invariance predicate that restricts
-  the golden set to static questions whose answers do not change over time; a golden set with
+  the golden set to questions whose answers do not change over time; a golden set with
   reference answers, aliases and supporting document identifiers, annotated independently by
   three annotators with Krippendorff's alpha of at least 0.67; a family of reference-based,
-  citation, abstention and retrieval metrics including a language-model judge that is
-  meta-evaluated separately for reliability and validity (Spearman correlation with human
-  ratings of at least 0.5); and a statistical protocol (paired bootstrap, Wilcoxon signed-rank
+  citation, abstention and retrieval metrics including an LLM judge meta-evaluated separately
+  for reliability and validity; and a statistical protocol (paired bootstrap, Wilcoxon signed-rank
   test with Holm correction, Cliff's delta) for comparing systems by a composite score. The
   object of study is the industrial system "Chinese Media Analysis" (Institute of Oriental
-  Studies, Russian Academy of Sciences) over a corpus of media from the PRC, Taiwan, Hong Kong
-  and Singapore (23.9 million chunks); it is compared with six open models without retrieval
+  Studies, Russian Academy of Sciences) over a corpus of Chinese-language media (23.9 million
+  chunks), compared with six open models without retrieval
   and with a shared retriever (13 systems).
 authors:
   - family-names: Bagrov

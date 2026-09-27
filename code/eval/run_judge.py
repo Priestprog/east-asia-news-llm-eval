@@ -6,9 +6,9 @@ scores{<dimension>: 0..5 | null}, rationales, extra, judge_model_reported, judge
 В ``meta.json`` прогона добавляется блок ``judge`` (модель, версия промпта, снимок моделей,
 отчёт о воспроизводимости).
 
-Измерения, требующие эталона, пропускаются на $G^{\varnothing}$; измерения, требующие
+Критерии, требующие эталона, пропускаются на $G^{\bot}$; критерии, требующие
 контекстов, — для систем без цитат (``None`` = NA). Перед прогоном проверяется ограничение
-судья $\notin \mathcal{L} \cup \{g_{\theta_{\mathrm{prod}}}\}$.
+судья $\ell_J \notin \mathcal{L} \cup \{\ell_{\mathrm{prod}}\}$.
 """
 
 from __future__ import annotations

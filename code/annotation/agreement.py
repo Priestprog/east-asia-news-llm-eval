@@ -1,11 +1,12 @@
-r"""Меры согласия разметчиков.
+r"""Меры согласия аннотаторов.
 
-Пороги постановки: Krippendorff $\alpha \ge 0.67$ — допустимо, $\ge 0.8$ — надёжно
+Пороги постановки: $\alpha$ Криппендорфа $\ge 0.67$ — допустимо, $\ge 0.8$ — надёжно ($\alpha_G$ при разметке $G$,
+$\alpha_h$ по шкалам 0–5 на $G_h$)
 (по инвариантности, отвечаемости и типу вопроса); попарный токенный F1 черновых
 ответов $\ge 0.8$. Согласие людей также задаёт потолок для валидации метрик
-(среднее попарное согласие — верхняя граница $\rho_S(m_k, \bar h)$).
+(среднее попарное согласие — верхняя граница $r_S(m_k, \bar h)$).
 
-Соглашение о данных: ``labels`` — матрица $R \times n$ (разметчики × единицы),
+Соглашение о данных: ``labels`` — матрица $R \times n$ (аннотаторы × единицы),
 ``None`` — пропущенная метка; единицы с менее чем двумя метками не участвуют.
 """
 
@@ -18,12 +19,12 @@ Label = int | float | str | None
 
 
 def krippendorff_alpha(labels: Sequence[Sequence[Label]], level: str = "nominal") -> float:
-    r"""Krippendorff $\alpha = 1 - D_o / D_e$.
+    r"""Коэффициент Криппендорфа $\alpha = 1 - D_o / D_e$.
 
     $D_o$ — наблюдаемое несогласие внутри единиц, $D_e$ — ожидаемое несогласие при случайном
-    распределении всех меток; метрика различия $\delta^2$ зависит от ``level``:
-    ``nominal`` ($\delta^2 = \mathbb{1}[c \ne k]$), ``ordinal``, ``interval``
-    ($\delta^2 = (c - k)^2$), ``ratio``. Подходит для любого числа разметчиков и пропусков.
+    распределении всех меток; метрика различия $\mathrm{dist}^2(c, c')$ между категориями зависит от ``level``:
+    ``nominal`` ($\mathrm{dist}^2 = \mathbb{I}[c \ne c']$), ``ordinal``, ``interval``
+    ($\mathrm{dist}^2 = (c - c')^2$), ``ratio``. Подходит для любого числа аннотаторов и пропусков.
     Возвращает ``nan``, если $D_e = 0$ (все метки одинаковы).
     Реализация — через пакет ``krippendorff`` с проверкой на игрушечном примере из
     Krippendorff (2011).
@@ -34,7 +35,7 @@ def krippendorff_alpha(labels: Sequence[Sequence[Label]], level: str = "nominal"
 def fleiss_kappa(labels: Sequence[Sequence[Label]]) -> float:
     r"""Fleiss $\kappa = (\bar P - \bar P_e) / (1 - \bar P_e)$ для номинальных меток.
 
-    $\bar P$ — средняя по единицам доля согласных пар разметчиков, $\bar P_e = \sum_c p_c^2$,
+    $\bar P$ — средняя по единицам доля согласных пар аннотаторов, $\bar P_e = \sum_c p_c^2$,
     где $p_c$ — доля меток категории $c$. Требует одинакового числа меток на единицу;
     единицы с пропусками исключаются (отличие от $\alpha$). Даётся как вторая, более
     известная комиссии мера.
@@ -43,7 +44,7 @@ def fleiss_kappa(labels: Sequence[Sequence[Label]]) -> float:
 
 
 def pairwise_answer_f1(answers: Sequence[Sequence[str | None]]) -> float:
-    r"""Среднее по единицам и по парам разметчиков $(r, r')$ токенного F1 их черновых ответов.
+    r"""Среднее по единицам и по парам аннотаторов $(r, r')$ токенного F1 их черновых ответов.
 
     $\mathrm{F1}(a, a') = \frac{2 P R}{P + R}$ по мультимножествам лемм после нормализации
     (та же ``normalize``/лемматизация, что в ``code.eval.metrics_reference``). Порог включения
@@ -55,8 +56,8 @@ def pairwise_answer_f1(answers: Sequence[Sequence[str | None]]) -> float:
 def agreement_report(
     annotations: Sequence[dict],
     fields: Sequence[str] = ("time_invariant", "answerable", "question_type"),
-    alpha_min: float = 0.67,
-    alpha_reliable: float = 0.8,
+    krippendorff_alpha_min: float = 0.67,
+    krippendorff_alpha_reliable: float = 0.8,
     f1_min: float = 0.8,
 ) -> dict:
     r"""Сводка: $\alpha$ и $\kappa$ по каждому полю с вердиктом (ниже порога / допустимо / надёжно),

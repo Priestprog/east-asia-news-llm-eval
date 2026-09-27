@@ -1,13 +1,13 @@
 r"""Обёртки оцениваемых систем $\mathcal{H}_{\mathrm{eval}}$.
 
-$\mathcal{H}_{\mathrm{eval}} = \{f_{\mathrm{prod}}\} \cup \{f_0^{(m)}\}_{m \in \mathcal{L}}
-\cup \{f_\rho^{(m)}\}_{m \in \mathcal{L}}$:
+$\mathcal{H}_{\mathrm{eval}} = \{f_{\mathrm{prod}}\} \cup \{f_0^{(\ell)}\}_{\ell \in \mathcal{L}}
+\cup \{f_\rho^{(\ell)}\}_{\ell \in \mathcal{L}}$:
 
-* ``prod_api.ProdApiSystem`` — $f_{\mathrm{prod}} = g_{\theta_{\mathrm{prod}}} \circ \rho_{\mathrm{prod}}$
+* ``prod_api.ProdApiSystem`` — $f_{\mathrm{prod}}(q) = g_{\mathrm{prod}}(q, \rho_{\mathrm{prod}}(q))$
   (Qdrant + SearchAPI + генератор), вызывается через HTTP API промышленной системы;
-* ``openai_compat.OpenAICompatSystem`` с ``retriever: none`` — $f_0^{(m)} = (g_m(q), \varnothing)$,
+* ``openai_compat.OpenAICompatSystem`` с ``retriever: none`` — $f_0^{(\ell)}(q) = (g_\ell(q), \varnothing)$,
   открытая модель провайдера ИВ РАН без поиска;
-* ``openai_compat.OpenAICompatSystem`` с ``retriever: cached_prod`` — $f_\rho^{(m)} = g_m \circ \rho_{\mathrm{prod}}$,
+* ``openai_compat.OpenAICompatSystem`` с ``retriever: cached_prod`` — $f_\rho^{(\ell)}(q) = g_\ell(q, \rho_{\mathrm{prod}}(q))$,
   та же выдача ретривера прода из ``retriever_cache.RetrieverCache`` с другой моделью
   (абляция «модель против ретривера»).
 """

@@ -1,4 +1,4 @@
-r"""Сборка и заморозка эталонной выборки $G = G^+ \sqcup G^{\varnothing}$.
+r"""Сборка и заморозка эталонной выборки $G = G^+ \sqcup G^{\bot}$.
 
 Запись JSONL (``data/golden_set/schema.json``): ``id, version, split, question{ru,zh,en},
 question_type, category, answerable, answer{canonical, aliases, type, lang},
@@ -6,7 +6,7 @@ supporting_docs[{webpage_id, urn_uuid, uri, published_at, source, evidence_span_
 requires_multi_doc, time_invariance{label, anchor_date, votes, exclusion_rules_checked},
 difficulty, provenance{draft_model, draft_prompt_id, seed_pool_ref, annotators, adjudicated, created_at}``.
 
-Ограничения: $|S^*_i| \ge 1$ для $G^+$; $n \ge 150$ (цель 200–300); $n_\varnothing \approx 0.1\,n$;
+Ограничения: $|S^*_i| \ge 1$ для $G^+$; $n \ge 150$ (цель 200–300); $n_{\bot} \approx 0.1\,n$;
 разбиение dev (30) / test с фиксированным seed; заморозка версии — sha256 файла в CHANGELOG.
 """
 
@@ -18,7 +18,7 @@ from typing import Sequence
 
 
 def unanimous_time_invariance(votes: Sequence[int]) -> int:
-    r"""$\widehat{\mathrm{Inv}}(q) = \mathbb{1}\left[\sum_{r=1}^{R} z_r(q) = R\right]$ — единогласие разметчиков."""
+    r"""$\widehat{\mathrm{Inv}}(q) = \mathbb{I}\left[\sum_{r=1}^{R} z_r(q) = R\right]$ — единогласие аннотаторов."""
     raise NotImplementedError("реализация — часть работы")
 
 
@@ -38,7 +38,7 @@ def validate_against_schema(records: Sequence[dict], schema_path: str) -> None:
 
 
 def check_constraints(records: Sequence[dict], n_min: int = 150, unanswerable_share: float = 0.1) -> dict:
-    r"""Проверка ограничений: $n \ge n_{\min}$, $|S^*_i| \ge 1$ на $G^+$, доля $G^{\varnothing}$,
+    r"""Проверка ограничений: $n \ge n_{\min}$, $|S^*_i| \ge 1$ на $G^+$, доля $G^{\bot}$,
     ≥3 доменов, 2 регионов, охват ≥12 месяцев; возвращает сводку и список нарушений."""
     raise NotImplementedError("реализация — часть работы")
 

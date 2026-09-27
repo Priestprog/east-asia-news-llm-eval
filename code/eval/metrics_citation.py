@@ -4,13 +4,13 @@ r"""Метрики цитирования (ALCE, Gao et al., 2023; адапта�
 
 * $\mathrm{CP}_{\mathrm{id}} = |\hat S \cap S^*_i| / |\hat S|$ — точность цитирования по идентификаторам;
   $\mathrm{NA}$ при $\hat S = \varnothing$;
-* $\mathrm{CR}_{\mathrm{id}} = |\hat S \cap S^*_i| / |S^*_i|$ — полнота; для закрытой книги
-  ($\hat S = \varnothing$) равна 0; $\mathrm{NA}$ при $S^*_i = \varnothing$ ($G^{\varnothing}$);
-* $\mathrm{CP}_{\mathrm{ent}} = \frac{1}{|\hat S|} \sum_{\iota \in \hat S} \mathbb{1}[x_\iota \models \hat a]$ —
+* $\mathrm{CR}_{\mathrm{id}} = |\hat S \cap S^*_i| / |S^*_i|$ — полнота; для систем без поиска
+  ($\hat S = \varnothing$) равна 0; $\mathrm{NA}$ при $S^*_i = \varnothing$ ($G^{\bot}$);
+* $\mathrm{CP}_{\mathrm{ent}} = \frac{1}{|\hat S|} \sum_{\iota \in \hat S} \mathbb{I}[x_\iota \models \hat a]$ —
   точность по следованию (NLI или судья): процитированный документ действительно влечёт ответ.
-  Нужна, потому что $S^*_i$ может быть неполным в корпусе из 23,9 млн чанков: верная цитата
+  Нужна, потому что $S^*_i$ может быть неполным в корпусе из 23,9 млн фрагментов: верная цитата
   на документ вне $S^*_i$ не должна штрафоваться. $\mathrm{NA}$ при $\hat S = \varnothing$
-  или $\hat a = \varnothing$.
+  или $\hat a = \bot$.
 
 Цитаты с номером вне ``source_map`` (например, ``(22)`` при трёх источниках) в $\hat S$
 не разрешаются и учитываются как ложные через ``n_unresolved``.
@@ -33,8 +33,8 @@ def citation_precision_id(cited_ids: set[int], supporting_ids: set[int], n_unres
 def citation_recall_id(cited_ids: set[int], supporting_ids: set[int]) -> float | None:
     r"""$\mathrm{CR}_{\mathrm{id}} = |\hat S \cap S^*_i| / |S^*_i|$.
 
-    0 при $\hat S = \varnothing$ (закрытая книга или ответ без цитат); ``None`` при
-    $S^*_i = \varnothing$ (запись из $G^{\varnothing}$).
+    0 при $\hat S = \varnothing$ (без поиска или ответ без цитат); ``None`` при
+    $S^*_i = \varnothing$ (запись из $G^{\bot}$).
     """
     raise NotImplementedError("реализация — часть работы")
 
@@ -45,13 +45,13 @@ def citation_precision_entailment(
     get_text: Callable[[int], str],
     entails: Callable[[str, str], bool],
 ) -> float | None:
-    r"""$\mathrm{CP}_{\mathrm{ent}} = \frac{1}{|\hat S|} \sum_{\iota \in \hat S} \mathbb{1}[x_\iota \models \hat a]$.
+    r"""$\mathrm{CP}_{\mathrm{ent}} = \frac{1}{|\hat S|} \sum_{\iota \in \hat S} \mathbb{I}[x_\iota \models \hat a]$.
 
     Args:
         answer: $\hat a$; при ``None`` (отказ) метрика не определена → ``None``.
         cited_ids: $\hat S$; при пустом множестве → ``None``.
         get_text: $\iota \mapsto x_\iota$ — текст документа (перевод) по ``webpage_id``.
-        entails: предикат $x \models \hat a$ — NLI-модель или судья-LLM с бинарным выходом;
+        entails: предикат $x \models \hat a$ — NLI-модель или LLM-судья с бинарным выходом;
             выбор реализации фиксируется в ``meta.json``.
     """
     raise NotImplementedError("реализация — часть работы")

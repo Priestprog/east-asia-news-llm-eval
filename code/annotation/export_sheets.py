@@ -2,14 +2,14 @@ r"""Листы разметки и их обратный импорт.
 
 Два вида листов:
 
-1. **Разметка Golden Set** ($R = 3$ независимых разметчика, не менее одного читающего
-   по-китайски). По каждому черновику разметчик $r$ проставляет: $z_r(q) \in \{0, 1\}$ —
+1. **Разметка Golden Set** ($R = 3$ независимых аннотатора, не менее одного читающего
+   по-китайски). По каждому черновику аннотатор $r$ проставляет: $z_r(q) \in \{0, 1\}$ —
    инвариантность во времени после проверки правил $E_1$–$E_5$; отвечаемость по корпусу;
    тип вопроса; исправленный канонический ответ и алиасы; подтверждение evidence-span.
    Листы обезличены и перемешаны (фиксированный seed), черновая метка модели скрыта.
 2. **Человеческая валидация** $h^{(r)}_{i,f} \in \{0, \dots, 5\}$ (правильность, обоснованность)
    для ответов систем $\mathcal{H}_h \subset \mathcal{H}_{\mathrm{eval}}$ на $G_h \subset G^+$;
-   разметчик не видит, какая система дала ответ.
+   аннотатор не видит, какая система дала ответ.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ ANNOTATION_COLUMNS: tuple[str, ...] = (
     "draft_id", "question_ru", "anchor_date", "evidence_span_ru", "evidence_span_zh", "supporting_uris",
     "time_invariant",            # z_r(q): 1 — инвариантен, 0 — нет
     "exclusion_rule",            # E1..E5 или пусто
-    "answerable",                # 1 — подтверждается корпусом, 0 — кандидат в G∅
+    "answerable",                # 1 — подтверждается корпусом, 0 — кандидат в G⊥
     "question_type",
     "answer_canonical_fixed", "answer_aliases_fixed",
     "evidence_confirmed",        # 1/0
@@ -63,7 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", default="code/configs/eval.yaml")
     parser.add_argument("--drafts", default="data/golden_set/v0.1-pilot/drafts.jsonl")
     parser.add_argument("--out-dir", default="data/golden_set/v0.1-pilot/sheets")
-    parser.add_argument("--annotators", type=int, default=3, help="R — число разметчиков")
+    parser.add_argument("--annotators", type=int, default=3, help="R — число аннотаторов")
     return parser
 
 

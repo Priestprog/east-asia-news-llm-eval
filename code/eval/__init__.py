@@ -10,10 +10,10 @@ $I_k(f) = \{i : m_k \ne \mathrm{NA}\}$.
 * ``metrics_reference`` — по эталону ($G^+$): EM, токенный F1, BERTScore-F1, косинусная близость;
 * ``metrics_citation`` — цитирование: $\mathrm{CP}_{\mathrm{id}}$, $\mathrm{CR}_{\mathrm{id}}$, $\mathrm{CP}_{\mathrm{ent}}$;
 * ``metrics_abstention`` — отказы: $\mathrm{AR}$, $\mathrm{FAR}$ (в таблице — $1 - \mathrm{FAR}$);
-* ``metrics_retrieval`` — компонент $\rho$: Hit@k, Recall@k, MRR, nDCG@k;
-* ``judge`` — судья-LLM: $m_J^{\mathrm{corr}}$ (новое измерение) и $m_J^{(d)}$ по существующей рубрике;
-* ``validate_metrics`` — отбор $M' = \{m_k : \rho_S(m_k, \bar h) \ge \rho_{\min}\}$;
-* ``stats`` — парный бутстреп, критерий Уилкоксона, поправка Холма, Cliff's $\delta$, композит $Q(f)$;
+* ``metrics_retrieval`` — компонент $\rho_{\mathrm{prod}}$: Hit@K, Recall@K, MRR, nDCG@K;
+* ``judge`` — LLM-судья: $m_J^{\mathrm{corr}}$ (новое измерение) и $m_J^{(d)}$ по существующей рубрике;
+* ``validate_metrics`` — отбор $M' = \{m_k : r_S(m_k, \bar h) \ge r_{\min}\}$;
+* ``stats`` — парный бутстреп, критерий Уилкоксона, поправка Холма, $\Delta_{\mathrm{C}}$ Клиффа, композит $Q(f)$;
 * ``run_generation``, ``run_judge``, ``make_tables`` — конвейер прогона и отчётные таблицы.
 """
 

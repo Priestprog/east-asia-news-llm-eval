@@ -2,9 +2,9 @@ r"""Открытые модели провайдера ИВ РАН через Op
 
 Два режима по полю ``retriever``:
 
-* ``none`` — $f_0^{(m)} = (g_m(q), \varnothing)$: «закрытая книга», модель отвечает
+* ``none`` — $f_0^{(\ell)}(q) = (g_\ell(q), \varnothing)$: «без поиска», модель отвечает
   из собственных знаний; $\hat S = \varnothing$, ``retrieved_ids = []``;
-* ``cached_prod`` — $f_\rho^{(m)} = g_m \circ \rho_{\mathrm{prod}}$: в промпт подаётся
+* ``cached_prod`` — $f_\rho^{(\ell)}(q) = g_\ell(q, \rho_{\mathrm{prod}}(q))$: в промпт подаётся
   та же выдача ретривера прода из ``RetrieverCache`` (контексты с номерами ``(N)``),
   что изолирует вклад модели от вклада ретривера.
 
@@ -22,7 +22,7 @@ from .retriever_cache import RetrievedContext, RetrieverCache
 
 
 class OpenAICompatSystem(System):
-    r"""$f_0^{(m)}$ или $f_\rho^{(m)}$ в зависимости от ``retriever``."""
+    r"""$f_0^{(\ell)}$ или $f_\rho^{(\ell)}$ в зависимости от ``retriever``."""
 
     kind = "openai_compat"
 
@@ -48,14 +48,14 @@ class OpenAICompatSystem(System):
     def build_messages(self, question: str, contexts: list[RetrievedContext] | None) -> list[dict]:
         r"""Собирает сообщения чата по ``prompt_version``.
 
-        Для $f_0^{(m)}$ — системный промпт без контекста; для $f_\rho^{(m)}$ — контексты
+        Для $f_0^{(\ell)}$ — системный промпт без контекста; для $f_\rho^{(\ell)}$ — контексты
         с нумерацией ``(N)`` и инструкция цитировать номера. В обоих режимах при
         ``abstention_instruction`` разрешён ответ «Я не знаю.».
         """
         raise NotImplementedError("реализация — часть работы")
 
     def answer(self, question: str, question_id: str | None = None) -> SystemOutput:
-        r"""Вычисляет $g_m(q)$ (или $g_m(q, \rho_{\mathrm{prod}}(q))$) при ``temperature = 0`` и фиксированном ``seed``.
+        r"""Вычисляет $g_\ell(q)$ (или $g_\ell(q, \rho_{\mathrm{prod}}(q))$) при ``temperature = 0`` и фиксированном ``seed``.
 
         Цитаты ``(N)`` переводятся в ``webpage_id`` по номерам контекстов кэша; для
         ``retriever: none`` возвращается $\hat S = \varnothing$.
