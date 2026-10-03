@@ -7,23 +7,26 @@ message: >-
 type: software
 title: "Система оценки качества ответов больших языковых моделей по новостным текстам стран Восточной Азии"
 abstract: >-
-  Bachelor's thesis repository (Faculty of Computational Mathematics and Cybernetics,
-  Lomonosov Moscow State University): a system for evaluating the quality of large language
-  model answers to questions about East Asian news texts in a cross-lingual setting (questions
-  in Russian, sources in Chinese-language media). The object of measurement is the answer
-  f(q) = (a, S), the text and the set of cited documents, to a question q about a frozen
-  corpus snapshot D_t0, not the model that produced it. The
-  system comprises a formal problem statement with a time-invariance predicate that restricts
-  the golden set to questions whose answers do not change over time; a golden set with
-  reference answers, aliases and supporting document identifiers, annotated independently by
-  three annotators with Krippendorff's alpha of at least 0.67; a family of reference-based,
-  citation, abstention and retrieval metrics including an LLM judge meta-evaluated separately
-  for reliability and validity; and a statistical protocol (paired bootstrap, Wilcoxon signed-rank
-  test with Holm correction, Cliff's delta) for comparing systems by a composite score. The
-  object of study is the industrial system "Chinese Media Analysis" (Institute of Oriental
-  Studies, Russian Academy of Sciences) over a corpus of Chinese-language media (23.9 million
-  chunks), compared with six open models without retrieval
-  and with a shared retriever (13 systems).
+  Bachelor's thesis repository (Faculty of Computational Mathematics and Cybernetics, Lomonosov
+  Moscow State University). Systems in which a large language model answers questions about
+  articles in a news archive are being deployed faster than ways to check their answers appear.
+  Existing test sets are in English or contain questions whose answers change over time, and the
+  agreement of automatic evaluation with humans and of annotators with each other is usually not
+  reported. This thesis builds a system for evaluating answers to questions about East Asian
+  news: the question is asked in Russian, and the sources are written in Chinese. What is
+  evaluated is the answer, that is, the text and the cited documents. The evaluation system has
+  four parts. First, a rigorous problem statement restricted to questions whose answers do not
+  change over time, so that the reference does not go stale. Second, a reference set of
+  questions with answers and supporting documents, including questions whose correct answer is
+  "I don't know"; each question is annotated independently by three people, and their agreement
+  is measured. Third, metrics of correctness, citation accuracy, abstention and retrieval;
+  correctness and citation scores, including those produced by another language model, are
+  admitted to the comparison only if they agree with human ratings on Russian-language answers.
+  Fourth, a paired statistical test of differences between systems on the same questions with a
+  correction for multiple comparisons. The object of study is the industrial system "Chinese
+  Media Analysis" of the Institute of Oriental Studies of the Russian Academy of Sciences (an
+  archive of 23.9 million chunks). It is to be compared with six open models without retrieval
+  and over the same retrieval results, 13 systems in total.
 authors:
   - family-names: Bagrov
     given-names: Alexander
