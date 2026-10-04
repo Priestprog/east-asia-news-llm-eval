@@ -240,3 +240,9 @@ results/runs/
 secret.env
 code/notebooks/.ipynb_checkpoints/
 data/golden_set/**/*.tmp
+
+# Кэш сторонних наборов данных для аудита (скачивается python -m code.audit; в репозиторий не входит)
+data/external/
+
+# Образец оформления слайдов (лекция К. В. Воронцова); в репозиторий не входит
+/Voron-ML-Intro-slides.pdf

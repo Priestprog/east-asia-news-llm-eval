@@ -39,9 +39,51 @@ class WilcoxonResult:
     n: int            # число ненулевых разностей
 
 
+@dataclass(frozen=True)
+class MeanCI:
+    mean: float | None
+    ci_low: float | None
+    ci_high: float | None
+    n: int
+    B: int
+
+
 def aggregate_metric(values: Sequence[float | None]) -> tuple[float | None, int]:
     r"""$\bar m_k(f)$ и $|I_k(f)|$: среднее по значениям, не равным NA; ``(None, 0)`` при пустом $I_k(f)$."""
-    raise NotImplementedError("реализация — часть работы")
+    kept = [float(v) for v in values if v is not None]
+    if not kept:
+        return None, 0
+    return sum(kept) / len(kept), len(kept)
+
+
+def bootstrap_mean_ci(
+    values: Sequence[float | None], B: int = 10000, significance_level: float = 0.05, seed: int = 20260917
+) -> MeanCI:
+    r"""Среднее по значениям, не равным NA, и перцентильный бутстреп-интервал уровня $1 - $ ``significance_level``.
+
+    Используется ``scipy.stats.bootstrap`` (``method='percentile'``, ресэмплинг по объектам с
+    возвращением, $B$ повторов, фиксированный ``seed``). Если все значения совпадают, интервал
+    вырождается в точку $[\bar m, \bar m]$.
+    """
+    import numpy as np
+    from scipy import stats as sps
+
+    mean, n = aggregate_metric(values)
+    if n == 0:
+        return MeanCI(None, None, None, 0, B)
+    data = np.asarray([v for v in values if v is not None], dtype=float)
+    if np.all(data == data[0]):
+        return MeanCI(mean, mean, mean, n, B)
+    res = sps.bootstrap(
+        (data,),
+        np.mean,
+        n_resamples=B,
+        confidence_level=1 - significance_level,
+        method="percentile",
+        vectorized=True,
+        random_state=np.random.default_rng(seed),
+    )
+    return MeanCI(mean, float(res.confidence_interval.low), float(res.confidence_interval.high), n, B)
 
 
 def composite_score(means: Mapping[str, float | None], weights: Mapping[str, float] | None = None) -> float:
@@ -61,7 +103,12 @@ def paired_bootstrap_ci(
     $B$ раз выбираются индексы $i$ с возвращением, считается $\bar\delta^{(b)}$;
     интервал — перцентили ``significance_level / 2`` и ``1 - significance_level / 2``. ``x`` и ``y`` уже выровнены по общим $i$.
     """
-    raise NotImplementedError("реализация — часть работы")
+    if len(x) != len(y):
+        raise ValueError("x и y должны быть выровнены по общим вопросам")
+    res = bootstrap_mean_ci([a - b for a, b in zip(x, y)], B=B, significance_level=significance_level, seed=seed)
+    if res.mean is None:
+        raise ValueError("нет общих вопросов для сравнения")
+    return BootstrapResult(res.mean, res.ci_low, res.ci_high, res.n, B)
 
 
 def wilcoxon_signed_rank(x: Sequence[float], y: Sequence[float], alternative: str = "two-sided") -> WilcoxonResult:

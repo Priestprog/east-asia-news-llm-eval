@@ -1,0 +1,441 @@
+{
+  "source": "https://github.com/freshllms/freshqa.git",
+  "export_url": "https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv",
+  "versions": [
+    {
+      "date": "2023-10-15",
+      "sheet_id": "1dHEKPuZXWtzj_te61DqcUnStQy6oakkXRcWF_Jihy1U",
+      "exportable": true
+    },
+    {
+      "date": "2023-10-23",
+      "sheet_id": "1Lk2eEaf9SpUx0HoczYLzazPBlBL6xeJzp8Y_Vnc8HSs",
+      "exportable": false
+    },
+    {
+      "date": "2023-10-31",
+      "sheet_id": "1jBlQki5kHTmz8Zu8Vp92sEYIlJYag4JtBkGZyfzafxY",
+      "exportable": false
+    },
+    {
+      "date": "2023-11-06",
+      "sheet_id": "1m73meRh_f2VQVySk3dw0dyM6J3pwt_RnIpTnjro4Ug4",
+      "exportable": false
+    },
+    {
+      "date": "2023-11-13",
+      "sheet_id": "1pNCxHBsPm75P_J-eoveiEFzFCSX9oWYwK8mKVdxYONk",
+      "exportable": false
+    },
+    {
+      "date": "2023-11-23",
+      "sheet_id": "17Sr6TjxoBAtOp1Gon-yDborgS3G39gr9oSWpTJp-KmI",
+      "exportable": false
+    },
+    {
+      "date": "2023-12-06",
+      "sheet_id": "13eT7p7YvXUSEDo33YCKJQ9EFBy_sOrM0eBsZ8nlafqs",
+      "exportable": false
+    },
+    {
+      "date": "2023-12-12",
+      "sheet_id": "1lZs_mvyKexjvjUbXOCwwf5mZzm0wU-DCs22J2Q-bFS8",
+      "exportable": false
+    },
+    {
+      "date": "2023-12-19",
+      "sheet_id": "1VgNv2e12hyTyHFuZ-7F3QzVcdbenA4Sz-W47VaKKTck",
+      "exportable": false
+    },
+    {
+      "date": "2023-12-26",
+      "sheet_id": "1TCZWzUBkKHkdjXhyYZ-pAsSlP4W1RC_SOkEwTqkNRHQ",
+      "exportable": false
+    },
+    {
+      "date": "2024-01-03",
+      "sheet_id": "1kAJp9zZ-RnhYtPo_mEDDv6YBHO66UJhE3pRgaCeo5jQ",
+      "exportable": false
+    },
+    {
+      "date": "2024-01-12",
+      "sheet_id": "1UQz_HDXMY6m1amZcllISx8OZOY2_3BDDQEvu5_QjI_0",
+      "exportable": true
+    },
+    {
+      "date": "2024-01-19",
+      "sheet_id": "1rVKv_sE13wlLLVGdlocCCrYB_sExY7VtC57cg19i6xU",
+      "exportable": true
+    },
+    {
+      "date": "2024-01-26",
+      "sheet_id": "1TmAixtE3wfMhXWFSn_1mK7PSXriQ6slZVmNs-bJpmdo",
+      "exportable": true
+    },
+    {
+      "date": "2024-01-28",
+      "sheet_id": "1Kfi7xpi9s2wOB97HDX76TAF3O_7jps0DFi4_LSNk6oM",
+      "exportable": true
+    },
+    {
+      "date": "2024-02-05",
+      "sheet_id": "1UZOJ_316tSJJjZuRnmPEoxxHFFW1aLiqYh0PzKpW0GQ",
+      "exportable": true
+    },
+    {
+      "date": "2024-02-12",
+      "sheet_id": "1tV-78VeXWEaSmgLbm1dNfQamKBRseqfxJTB1xKpmU0c",
+      "exportable": true
+    },
+    {
+      "date": "2024-02-19",
+      "sheet_id": "14dWKxtCuoS7gAp_qkQmzp5WiV-4M9jHkOn3-yJvxvGM",
+      "exportable": true
+    },
+    {
+      "date": "2024-02-26",
+      "sheet_id": "1V6nIxVTI9tqZ-wfgK-uFuUPiGEa1Zmnz53OeGbaNtO0",
+      "exportable": true
+    },
+    {
+      "date": "2024-03-04",
+      "sheet_id": "1ta7vIcCxShdFWEPY2AMt-F1DFmpfa2j0wewwJO3mC60",
+      "exportable": true
+    },
+    {
+      "date": "2024-03-11",
+      "sheet_id": "1wuaanfgOA4cHodseXs6H4MBTsRs5JaUbnqleo7o4vPM",
+      "exportable": true
+    },
+    {
+      "date": "2024-03-18",
+      "sheet_id": "13tzqv1oquj-GvdCkWlS13lmVaZqhWQ61CIDE1Ngh71A",
+      "exportable": true
+    },
+    {
+      "date": "2024-03-25",
+      "sheet_id": "1DLTGhLCmOgau-np1oQqoeRRyd7Ow6y0bJHmNFrsPmeQ",
+      "exportable": true
+    },
+    {
+      "date": "2024-04-01",
+      "sheet_id": "1L9V0pRqyBl1476zyQh32NquCnv7-pe3Y7VOfGPwQTDo",
+      "exportable": true
+    },
+    {
+      "date": "2024-04-08",
+      "sheet_id": "1nDEWXXG2VcXEktYiLhQ8QWmw4DFshiodgGh6A4dlgUQ",
+      "exportable": true
+    },
+    {
+      "date": "2024-04-15",
+      "sheet_id": "1c5pn-FIFZl4MV02dEZ-_R2JsKywD7ZzL7dfG2T-OGt4",
+      "exportable": true
+    },
+    {
+      "date": "2024-04-22",
+      "sheet_id": "1dI54REjfTpFCrvpXvpO1D1QeAXRuTrLbvenjklmuj8k",
+      "exportable": true
+    },
+    {
+      "date": "2024-04-29",
+      "sheet_id": "1qWhTS1aR57eHa6LQlYyJKEnXaItlQ0_19vYrIPxMtI0",
+      "exportable": true
+    },
+    {
+      "date": "2024-05-06",
+      "sheet_id": "1i1vqjOvGh2LQ9L_AimalzezuU-AQDANubvh4OE-iJcs",
+      "exportable": false
+    },
+    {
+      "date": "2024-05-10",
+      "sheet_id": "166xjz7rGaN3MaeimuZJBbEXPzT8PvEpHBno7iJ2obss",
+      "exportable": true
+    },
+    {
+      "date": "2024-05-13",
+      "sheet_id": "1p0qXk1iqSwV9Pq2DpivwtxfKUjLyK_n-k3jgtlDb_54",
+      "exportable": false
+    },
+    {
+      "date": "2024-05-20",
+      "sheet_id": "1EWc3w_dBfJONl_HtL7LtRsmZ-XYi-gKFCkUZAs62o_I",
+      "exportable": true
+    },
+    {
+      "date": "2024-05-27",
+      "sheet_id": "1cPtDoCgBG3weih7AuAnXk9jsgEH8XMWYHzKMD1OgX-4",
+      "exportable": true
+    },
+    {
+      "date": "2024-06-03",
+      "sheet_id": "1GxL0kr0IC3kDeisjxPLRHgM5uOhDFVgDpqcINibD0uk",
+      "exportable": true
+    },
+    {
+      "date": "2024-06-10",
+      "sheet_id": "1PDLReKlbKxbnu66v_-PKoxqx50OdiYhHc192kYnaqWI",
+      "exportable": true
+    },
+    {
+      "date": "2024-06-17",
+      "sheet_id": "1ONVJy_f1WdCVJ_N9mmHfOpJPQ-eC8eK4oekjCBHDygY",
+      "exportable": true
+    },
+    {
+      "date": "2024-06-24",
+      "sheet_id": "11oqtBYZiO0I0niWLJqo6shQRCinwLSczNIGSq9hafbQ",
+      "exportable": true
+    },
+    {
+      "date": "2024-07-03",
+      "sheet_id": "1hJPGja3DuUSkVROoIZGfjZroGFugqT-AO6bzbREQDlI",
+      "exportable": true
+    },
+    {
+      "date": "2024-07-11",
+      "sheet_id": "16x3-m3iLRk5ljK_93EKxhOFRLf8o2L4sqmKZO0CkhU8",
+      "exportable": true
+    },
+    {
+      "date": "2024-07-19",
+      "sheet_id": "1aHg4rFTYNtgYXFERDLXTsoYCPvfuZkenflrwPLjMPnU",
+      "exportable": true
+    },
+    {
+      "date": "2024-07-26",
+      "sheet_id": "18cz7kmmQFk3jHbowOrzTGjPusdb5GnFEZYKXQL-girw",
+      "exportable": true
+    },
+    {
+      "date": "2024-08-02",
+      "sheet_id": "1gQ8VKZJSAoZATWO1sdnmmQaSuhtQH2pVUwexKkHIxfQ",
+      "exportable": true
+    },
+    {
+      "date": "2024-08-12",
+      "sheet_id": "19bl0W9bw2Ro3I0SjTu8G-y49-ZJVN2dHyEnC-M82gDY",
+      "exportable": true
+    },
+    {
+      "date": "2024-08-19",
+      "sheet_id": "1XDgfCx2sOG4JVP9aFUfny7dd2jYnse6fEdSTIptPDoo",
+      "exportable": true
+    },
+    {
+      "date": "2024-08-26",
+      "sheet_id": "1l6gLnJvHPHL80RM2FtNumkD6szsvtp8E7JV7cR61lX0",
+      "exportable": true
+    },
+    {
+      "date": "2024-09-05",
+      "sheet_id": "19Fn-lqkrZsJt4I6EpAGn0dm2tBcfz_86dKWT3VkERLo",
+      "exportable": true
+    },
+    {
+      "date": "2024-09-16",
+      "sheet_id": "1739rsb_Lzm7EMxYzGHxsuBMzetLCdMHKsYUA0LwvWlQ",
+      "exportable": true
+    },
+    {
+      "date": "2024-09-23",
+      "sheet_id": "1PnCh2Tg_K4eRdpbe-nnN9REMoK8QGdKAQ4KrNNBPhWA",
+      "exportable": true
+    },
+    {
+      "date": "2024-09-30",
+      "sheet_id": "1mNW3QOlQmujaOn-9BKrD6ujhJr4MGjkgmSKKedKeU8E",
+      "exportable": true
+    },
+    {
+      "date": "2024-10-07",
+      "sheet_id": "1yvTJzfD5Rf64gd0xSekfK0yGHaAIv-nOZenKYfoAT_0",
+      "exportable": true
+    },
+    {
+      "date": "2024-10-14",
+      "sheet_id": "1L6iHkseRKNrx32iYA5ptiwf8rbM0S1W3zgcLTqXqdEE",
+      "exportable": true
+    },
+    {
+      "date": "2024-10-21",
+      "sheet_id": "13McP8V9S5bHqwNj-Bc8-2iy6NnsPAqoPdT_U2rPnf4A",
+      "exportable": true
+    },
+    {
+      "date": "2024-10-28",
+      "sheet_id": "1j6qr14l8oK_7gJ_XdnTBi8Pj1NVt5yeQEBKxFPkKn_g",
+      "exportable": true
+    },
+    {
+      "date": "2024-11-04",
+      "sheet_id": "1JtSVXl5M5xT-fyEF32uI2YRozMjP1RIICB7zYGC9gLI",
+      "exportable": true
+    },
+    {
+      "date": "2024-11-18",
+      "sheet_id": "1o1Hcpjqn4jZmQBL-kqbwsm7zK_vpaYmehHODalMHGdQ",
+      "exportable": true
+    },
+    {
+      "date": "2024-11-25",
+      "sheet_id": "1d7clVEos4LNy0oJ61QYwrXUVN4LG-APtszjAC0As-i8",
+      "exportable": true
+    },
+    {
+      "date": "2024-12-02",
+      "sheet_id": "1jSRMJTyYTuoavS-f6LRPdkD8ndNtHokGzBjFfFxHgXg",
+      "exportable": true
+    },
+    {
+      "date": "2024-12-09",
+      "sheet_id": "1MAli0K89SfYq_hFv7J6DhiU2Ovbu9xirksaK7v_YEuY",
+      "exportable": true
+    },
+    {
+      "date": "2024-12-18",
+      "sheet_id": "1llFQDYuwX95L7yYDQ4aLCwJmkEh9VOSHNu6g7HjT8e0",
+      "exportable": true
+    },
+    {
+      "date": "2025-02-03",
+      "sheet_id": "1t3n4vP3-49-_lz8nHaH5JXC21s_EfhxqL1vI3bhPEnU",
+      "exportable": true
+    },
+    {
+      "date": "2025-02-10",
+      "sheet_id": "1LWf-6NIYtmi_Eu6VTGexwLH4V0A5vncRASAdVRxRDLo",
+      "exportable": true
+    },
+    {
+      "date": "2025-02-17",
+      "sheet_id": "12aWIs2Vw8mlrs6iKfuEj_ZEDoW10wEfQ2N0qy2raPA8",
+      "exportable": true
+    },
+    {
+      "date": "2025-02-24",
+      "sheet_id": "1e_0mORRXJsCgLR2ZaaBWm2tzfWB2msjQ---a9jaBZnE",
+      "exportable": true
+    },
+    {
+      "date": "2025-03-03",
+      "sheet_id": "1IcgM8cRmW8Xa2RDIiTuMvZgyogB1fc9oSSNaJfURPhk",
+      "exportable": true
+    },
+    {
+      "date": "2025-03-10",
+      "sheet_id": "1pR1ETI3cX9_295HhfPfRUOHNlEYE5aJhbNFqN7DJ5Xk",
+      "exportable": true
+    },
+    {
+      "date": "2025-03-17",
+      "sheet_id": "1PWYzWFXY4Oa6hCVJqd_2ac9FaQMoEeUazXy928tgQIA",
+      "exportable": true
+    },
+    {
+      "date": "2025-03-24",
+      "sheet_id": "1kJuCOHe4p3RBvNUxIlA5fBg7fzOxWm0fgi1Y50jrCm8",
+      "exportable": true
+    },
+    {
+      "date": "2025-03-31",
+      "sheet_id": "1wphfq_HQTmKghWGMAL18dyo4ZLTcjEuTmmnMEOtZxI4",
+      "exportable": true
+    },
+    {
+      "date": "2025-04-07",
+      "sheet_id": "1tSq24yACs1CrwzyUh1tg8U7Ej2CUcQYNjrGZgn4UtEI",
+      "exportable": true
+    },
+    {
+      "date": "2025-04-14",
+      "sheet_id": "1ME3i1Ln1eVOpAZMOFvIU5q2FpTw_xR-Zz_hqH3RrvAE",
+      "exportable": true
+    },
+    {
+      "date": "2025-04-28",
+      "sheet_id": "1GjyHES7YDEbcVsrXx8dBxSG6mfYBeBqpRAB5a0MWouA",
+      "exportable": true
+    },
+    {
+      "date": "2025-05-06",
+      "sheet_id": "1gg7tOqVvae8cYHbZWsbTkr0RRQFXQqVrIPbO_VIvy-4",
+      "exportable": true
+    },
+    {
+      "date": "2025-06-05",
+      "sheet_id": "1Udty_LnNp1l97rJBvmFWRP9hTR1uhDq3amCPbCFd2Sg",
+      "exportable": true
+    },
+    {
+      "date": "2025-06-13",
+      "sheet_id": "17OhuPWlH2CuL9jgHoVlvQRLYmHlyWvkDpjctgI7VX3Y",
+      "exportable": true
+    },
+    {
+      "date": "2025-06-23",
+      "sheet_id": "19lsv-6YVvsB8nlrhYE1O82LT4TpjLQink8lKYn5Cxmc",
+      "exportable": true
+    },
+    {
+      "date": "2025-07-07",
+      "sheet_id": "1_3Qtf6kILIKzEVRaG4DchNhU5mbAbEGjgl8FX1GzHr8",
+      "exportable": true
+    },
+    {
+      "date": "2025-07-14",
+      "sheet_id": "1B9vaXV7K_2WPAxkO4OuLrN1YS8zOQ0bBFPU5apnUpU0",
+      "exportable": true
+    },
+    {
+      "date": "2025-07-22",
+      "sheet_id": "1VZSW7QtcYyZm1spWRHIkNq1iSWLnRwlKlb7t9C8F38o",
+      "exportable": true
+    },
+    {
+      "date": "2025-07-28",
+      "sheet_id": "1XYTgnilxwoxihTBYg9X3II4a4orHQYLAkyVnf70LA1c",
+      "exportable": true
+    },
+    {
+      "date": "2025-08-11",
+      "sheet_id": "154_qZi_C2-OlbmWVmW7PIha2ybWs9lhAdElPX3L4zHE",
+      "exportable": true
+    },
+    {
+      "date": "2025-08-18",
+      "sheet_id": "10c1ZhL091BQmLTQq8ryC_JQex_hKNa0r_lk2-JEDWHM",
+      "exportable": true
+    },
+    {
+      "date": "2025-08-27",
+      "sheet_id": "1q9YyuCY41XwiX6Ke05z2szz6kKmmD6mM__fmPjwAzpA",
+      "exportable": true
+    },
+    {
+      "date": "2025-09-30",
+      "sheet_id": "1c5ktMZWk4tg9PMikA40_t9cH2WoFRxquCRAElnanMEQ",
+      "exportable": true
+    },
+    {
+      "date": "2025-10-07",
+      "sheet_id": "1KBrntvgshX3KWV68UQYyOzAN2wRl6YroQBSo3cZ1eBI",
+      "exportable": true
+    },
+    {
+      "date": "2025-10-24",
+      "sheet_id": "1lMix7JCf-E8mCCjRu8e3QlX3eet1AnabZ4reWaWZfZY",
+      "exportable": true
+    },
+    {
+      "date": "2025-11-24",
+      "sheet_id": "1X6oTXzU1L9PWc2uim1eVzdX8V7y7_4crWfdJhVV08L4",
+      "exportable": true
+    },
+    {
+      "date": "2026-04-21",
+      "sheet_id": "1_8mi-yuK30mvoDJu1KQXD6ODem7MKMcIgVAwDSzJkjM",
+      "exportable": true
+    }
+  ]
+}
