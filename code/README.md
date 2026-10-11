@@ -76,6 +76,17 @@ code/
 │       ├── prod.yaml            # f_prod: prod_api, qdrant+searchapi, top_k=5, max_pages=3, threshold=0.3
 │       ├── open_closed_book.yaml    # f_0^{(ℓ)}: openai_compat, retriever none
 │       └── open_with_retrieval.yaml # f_ρ^{(ℓ)}: openai_compat, retriever cached_prod
+├── audit/                       # базовый эксперимент: аудит существующих наборов (ADR-020)
+│   ├── __main__.py              # python -m code.audit [--stage download|compute|plots|all]
+│   ├── download.py              # FreshQA (75 версий), RGB, CDQA, ChronoQA, DRAGOn → data/external/ (не в git)
+│   ├── freshqa_versions.json    # даты и идентификаторы таблиц версий FreshQA
+│   ├── markers.py               # маркеры момента запроса, даты и правил E1, E2, E4 (ru, en, zh)
+│   ├── common.py                # нормализация, доли с бутстреп-интервалом, запись CSV, sources.csv
+│   ├── compute_freshqa.py       # устаревание эталонов FreshQA → results/audit/freshqa_*.csv
+│   ├── compute_datasets.py      # дефекты RGB, CDQA, ChronoQA, DRAGOn → datasets_measures.csv
+│   ├── compute_seed_pool.py     # эвристики E1, E2, E4 на 388 вопросах → seed_pool_*.csv
+│   ├── compute_summary.py       # сводная таблица наборов → datasets_summary.{csv,md}
+│   └── plots.py                 # рисунки по таблицам → results/figures/{freshqa_staleness_sketch,main_message}
 ├── annotation/                  # построение G
 │   ├── sample_documents.py      # стратифицированный отбор webmedia ∩ Qdrant, снимок D_{t0}
 │   ├── generate_drafts.py       # черновики (q, a, S, evidence, тип, дата) генератором g_draft на модели ℓ_draft ∉ L; seed pool
@@ -115,6 +126,7 @@ $`\bar m_k(f)`$ идёт по $`I_k(f) = \{i : m_k \ne \mathrm{NA}\}`$.
 
 | Цель | Что делает |
 |---|---|
+| `make audit` | базовый эксперимент: загрузка наборов, таблицы `results/audit/`, рисунки `results/figures/` |
 | `make drafts` | отбор документов, черновики моделью $`g_{\mathrm{draft}}`$, листы разметки |
 | `make agreement` | $`\alpha`$ Криппендорфа, Fleiss $`\kappa`$, попарный F1 ответов аннотаторов |
 | `make build-gs` | адъюдикация и сборка Golden Set версии `GS_VERSION` (JSONL, sha256) |

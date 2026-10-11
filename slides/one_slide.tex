@@ -1,0 +1,87 @@
+\documentclass[t]{beamer}
+
+\usepackage{cmap}
+\usepackage[T2A,T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{amssymb,amsfonts,amsmath}
+
+% Работа на одном слайде. Оформление то же, что в slides/main.tex (тема Warsaw, 4:3, 11pt);
+% шапка с разделами не нужна, в подвале автор и место выполнения работы.
+\usetheme{Warsaw}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\setbeamerfont{frametitle}{size=\normalsize,series=\bfseries}
+\setbeamertemplate{footline}{%
+    \leavevmode%
+    \hbox{%
+        \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm plus1fill,rightskip=.3cm]{author in head/foot}%
+            \usebeamerfont{author in head/foot}\insertshortauthor
+        \end{beamercolorbox}%
+        \begin{beamercolorbox}[wd=.5\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm,rightskip=.3cm]{title in head/foot}%
+            \usebeamerfont{title in head/foot}\insertshorttitle
+        \end{beamercolorbox}}%
+    \vskip0pt%
+}
+\definecolor{vblue}{rgb}{0.2,0.2,0.7}  % основной цвет темы (structure)
+\newcommand{\key}[1]{\textcolor{red}{\textbf{#1}}}  % «Дано», «Найти», «Критерий», «Результат»
+\let\mathrm\mathsf  % прямые обозначения в формулах набираются тем же рубленым шрифтом, что и текст
+\setbeamertemplate{caption}[numbered]  % подпись вида «Рис. 1. …»
+\setbeamertemplate{caption label separator}{.\ }
+\setbeamerfont{caption}{size=\scriptsize}
+\setlength{\abovecaptionskip}{1ex}
+
+% Обозначения стандарта v2 (docs/decisions.md, ADR-016); макросы совпадают с main.tex.
+\newcommand{\Lm}{\mathcal{L}}
+\newcommand{\Heval}{\mathcal{H}_{\mathrm{eval}}}
+\newcommand{\ldraft}{\ell_{\mathrm{draft}}}
+\newcommand{\gdraft}{g_{\mathrm{draft}}}
+\newcommand{\refuse}{\bot}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\title[ВКР\quad\textbullet\quad ВМК МГУ\quad\textbullet\quad 2026]{Система оценки качества ответов БЯМ СМИ ВА}
+\author[А.\,М.~Багров (alexbagrov04@gmail.com)]{Багров Александр Михайлович}
+\date{2026}
+
+\begin{document}
+
+\begin{frame}{Система оценки качества ответов БЯМ СМИ ВА}
+    \vspace{-1.2ex}
+    \begin{figure}
+    \begin{tikzpicture}[
+        node distance=2.5mm and 4mm,
+        stage/.style={draw=vblue, fill=vblue!8, rounded corners, align=center, font=\scriptsize,
+                      text width=2.8cm, minimum height=0.85cm, inner sep=2pt},
+        >={Stealth[length=2mm]}
+    ]
+        \node[stage] (a) {Снимок корпуса $D_{t_0}$, стратифицированный отбор};
+        \node[stage, right=of a] (b) {Черновики $(q,a,S)$ генератором $\gdraft$ на модели $\ldraft\notin\Lm$};
+        \node[stage, right=of b] (c) {Разметка $R=3$, правила $E_1$--$E_5$, согласие $\alpha_G$};
+        \node[stage, below=of a] (d) {Эталонная выборка $G=G^+\sqcup G^{\refuse}$};
+        \node[stage, right=of d] (e) {Метрики $M$, валидация $M'$ по $\bar h$};
+        \node[stage, right=of e] (f) {Прогоны $\Heval$, статистика, $Q(f)$};
+        \draw[->, vblue] (a) -- (b);
+        \draw[->, vblue] (b) -- (c);
+        \draw[->, vblue] (c.south) -- ++(0,-1.5mm) -| (d.north);
+        \draw[->, vblue] (d) -- (e);
+        \draw[->, vblue] (e) -- (f);
+    \end{tikzpicture}
+    \caption{Схема сравнения промышленной системы с~открытыми моделями на созданном статическом эталоне и отобранной системе метрик, согласованной с~оценками людей.}
+    \end{figure}
+    \vspace{-1.5ex}
+    \small
+    \key{Дано:} корпус китайскоязычных СМИ и 13~систем ответа на вопросы: промышленная RAG-система и 6~открытых БЯМ в двух режимах.
+
+    \smallskip
+    \key{Найти:} эталон из статических вопросов, метрики, согласованные с~людьми, и~лучшую систему $f^\star=\argmax_f Q(f)$.
+
+    \smallskip
+    \key{Критерий:} согласие метрики с людьми $r_S\ge0{,}5$; различие систем по парному бутстрепу с поправкой Холма, $p<0{,}05$.
+
+    \smallskip
+    \key{Результат:} эталоны существующих наборов устаревают: в FreshQA за 30~месяцев изменились 89\,\% ответов на быстро меняющиеся вопросы и не более 6\,\% на неизменные. Поэтому эталон строим только из статических вопросов.
+\end{frame}
+
+\end{document}

@@ -5,8 +5,8 @@
 # поэтому make запускается из корня. Интерпретатор переопределяется переменной PYTHON,
 # например: make check PYTHON=code/.venv/bin/python
 #
-# Статус: каркас. Содержательные модули завершаются NotImplementedError; рабочей является
-# цель check (компиляция, импорт, валидация JSON/YAML).
+# Статус: каркас. Содержательные модули завершаются NotImplementedError; рабочими являются
+# цели audit (базовый эксперимент, ADR-020) и check (компиляция, импорт, валидация JSON/YAML).
 
 PYTHON       ?= python3
 EVAL_CONFIG  ?= code/configs/eval.yaml
@@ -16,10 +16,15 @@ GS_VERSION   ?= v1.0
 # Идентификатор прогона: дата-время и имя конфигурации системы (например 20270115-093000-prod).
 RUN_ID       ?= $(shell date +%Y%m%d-%H%M%S)-$(notdir $(basename $(SYSTEM)))
 
-.PHONY: help drafts agreement build-gs run judge validate stats tables check
+.PHONY: help audit drafts agreement build-gs run judge validate stats tables check
 
 help: ## список целей
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
+
+# --- Базовый эксперимент: аудит существующих наборов --------------------------------------
+
+audit: ## загрузка FreshQA, RGB, CDQA, ChronoQA, DRAGOn в data/external/, таблицы results/audit/, рисунки results/figures/
+	$(PYTHON) -m code.audit --stage all
 
 # --- Построение эталонной выборки G = G+ ⊔ G⊥ -------------------------------------------
 
@@ -65,7 +70,7 @@ check: ## py_compile всех модулей, импорт пакетов, ва�
 	  [importlib.import_module(m) for m in mods]; \
 	  print('  ok', len(mods), 'модулей')"
 	@echo "JSON:"
-	@find . \( -path ./.git -o -path '*/.venv' -o -path './results/runs' \) -prune -o -name '*.json' -print | sort | \
+	@find . \( -path ./.git -o -path '*/.venv' -o -path './results/runs' -o -path './data/external' \) -prune -o -name '*.json' -print | sort | \
 	  while read -r f; do \
 	    $(PYTHON) -c "import json, sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$$f" || exit 1; \
 	    echo "  ok $$f"; \
