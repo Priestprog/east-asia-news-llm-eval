@@ -51,7 +51,7 @@ Systems in which a large language model answers questions about articles in a ne
 
 ### Дано
 
-1. Момент фиксации $`t_0`$ и корпус $`D=\{d_j\}_{j=1}^N`$, где $`d_j=(\iota_j,u_j,\tau_j,s_j,x_j^{zh},x_j^{ru})`$ — стабильный идентификатор документа (`webpage_id`/`urn_uuid`), URL, дата публикации $`\tau_j\le t_0`$, источник, текст оригинала и его перевод. Множество идентификаторов обозначается $`\mathcal{I}`$. Разбиение на фрагменты — деталь ретривера; единственное требование — каждый фрагмент отображается в идентификатор $`\iota_j\in\mathcal{I}`$.
+1. Момент фиксации $`t_0`$ и корпус $`D=\{d_j\}_{j=1}^N`$, где $`d_j=(\iota_j,u_j,\tau_j,o_j,x_j^{zh},x_j^{ru})`$ — стабильный идентификатор документа (`webpage_id`/`urn_uuid`), URL, дата публикации $`\tau_j\le t_0`$, источник, текст оригинала и его перевод. Множество идентификаторов обозначается $`\mathcal{I}`$. Разбиение на фрагменты — деталь ретривера; единственное требование — каждый фрагмент отображается в идентификатор $`\iota_j\in\mathcal{I}`$.
 
 2. Пространства: вопросы $`\mathcal{Q}`$ (на русском языке); ответы $`\mathcal{A}=\mathcal{A}^+\sqcup\{\bot\}`$, где $`\bot`$ — отказ («Я не знаю.»); цитирования $`2^{\mathcal{I}}`$ — подмножества идентификаторов документов.
 
@@ -133,7 +133,7 @@ Systems in which a large language model answers questions about articles in a ne
 - **Формат.** JSONL, одна запись на вопрос. Поля: `id`, `version`, `split`, `question{ru,zh,en}`, `question_type`, `category`, `answerable`, `answer{canonical, aliases, type, lang}`, `supporting_docs[{webpage_id, urn_uuid, uri, published_at, source, evidence_span_ru, evidence_span_zh}]`, `requires_multi_doc`, `time_invariance{label, anchor_date, votes, exclusion_rules_checked}`, `difficulty`, `provenance{draft_model, draft_prompt_id, seed_pool_ref, annotators, adjudicated, created_at}`.
 - **Лицензия.** Разметка (вопросы, ответы, алиасы, метаданные, evidence-span) распространяется по лицензии CC BY 4.0.
 - **Что не публикуется.** Полные тексты статей и их переводы: они остаются в корпусе ИВ РАН. В выборке — только стабильные идентификаторы `webpage_id`/`urn_uuid`, URL, даты публикации и короткие evidence-span.
-- **Происхождение.** Черновики порождает генератор $`g_{\mathrm{draft}}`$ на модели $`\ell_{\mathrm{draft}}\notin\mathcal{L}`$; 388 вопросов из промышленного репозитория используются как seed pool (`data/seed_pool/`) после перекладки ключей `warc_id → webpage_id`; они не являются эталоном, поскольку не содержат ответов и признака статичности.
+- **Происхождение.** Черновики порождает генератор $`g_{\mathrm{draft}}`$ на модели $`\ell_{\mathrm{draft}}\notin\mathcal{L}`$ (Claude Opus 5.5; только черновики, каждую запись проверяют три аннотатора, исходный черновик сохраняется в `provenance.draft`, [ADR-022](docs/decisions.md#adr-022-модель-черновиков-и-границы-её-роли)); 388 вопросов из промышленного репозитория используются как seed pool (`data/seed_pool/`) после перекладки ключей `warc_id → webpage_id`; они не являются эталоном, поскольку не содержат ответов и признака статичности.
 
 ## Оцениваемые системы
 

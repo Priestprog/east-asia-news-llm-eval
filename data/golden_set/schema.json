@@ -234,7 +234,7 @@
         "source": {
           "type": "string",
           "minLength": 1,
-          "description": "Источник s_j: доменное имя (netloc) издания."
+          "description": "Источник o_j: доменное имя (netloc) издания."
         },
         "evidence_span_ru": {
           "type": "string",
@@ -325,6 +325,7 @@
       "required": [
         "draft_model",
         "draft_prompt_id",
+        "draft",
         "seed_pool_ref",
         "annotators",
         "adjudicated",
@@ -334,12 +335,31 @@
         "draft_model": {
           "type": "string",
           "minLength": 1,
-          "description": "Модель g_draft, породившая черновик вопроса и ответа; не входит в множество оцениваемых моделей."
+          "description": "Модель ℓ_draft, предложившая черновик вопроса и ответа (claude-opus-5-5, ADR-022); не входит в множество оцениваемых моделей и в разметке не участвует."
         },
         "draft_prompt_id": {
           "type": "string",
           "minLength": 1,
           "description": "Идентификатор версии промпта генерации черновиков (code/configs)."
+        },
+        "draft": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["question_ru", "answer_canonical", "answer_aliases", "supporting_ids"],
+          "description": "Черновик ℓ_draft до разметки, без изменений (ADR-022); по нему считается вклад аннотаторов.",
+          "properties": {
+            "question_ru": { "type": "string", "minLength": 1 },
+            "answer_canonical": {
+              "type": ["string", "null"],
+              "description": "Ответ черновика; null — черновик кандидата в G⊥."
+            },
+            "answer_aliases": { "type": "array", "items": { "type": "string" } },
+            "supporting_ids": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1 },
+              "description": "webpage_id документов S, предложенных черновиком."
+            }
+          }
         },
         "seed_pool_ref": {
           "type": ["string", "null"],

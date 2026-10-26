@@ -1,0 +1,19 @@
+{
+  "t0": "2026-10-23",
+  "collection": "webmedia_sentence_transformers_distiluse_base_multilingual_cased_v2",
+  "points_count": 23917369,
+  "N": 1563336,
+  "ids_sha256": "6f9d98b9ba7ca2f1a3cf88cf47e21fc626046b65fc039502037480ce8674588b",
+  "ids_hash_definition": "sha256 строки отсортированных webpage_id через \\n",
+  "webpages_missing_in_postgres": 0,
+  "domains": 19,
+  "months": {
+    "first": "2016-08",
+    "last": "2023-08",
+    "distinct": 20
+  },
+  "lang_code": {
+    "zh": 1563336
+  },
+  "code_git_sha": "5da1a300aa7fdbf3aa812565faaaa81950018445"
+}

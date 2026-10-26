@@ -1,0 +1,40 @@
+# Отбор позиций для черновиков эталонной выборки (ADR-023): python -m code.annotation.sample_documents sample.
+# Позиция — документ корпуса D_{t0}; для статей seed pool к ней приложены исходные вопросы промышленной системы.
+seed: 20260917
+
+n_positions: 300           # основные позиции: seed pool + новые документы
+n_seed:                    # статьи seed pool по доменам (сопоставлены с корпусом; The News Lens в корпусе нет)
+  www.rfi.fr: 30
+  inews.hket.com: 30
+seed_regions:
+  www.rfi.fr: Франция (RFI)
+  inews.hket.com: Гонконг
+n_reserve: 60              # резерв из тех же страт: замена позиций, непригодных для вопроса
+n_unanswerable: 30         # кандидаты в G⊥ среди новых позиций (n_⊥ ≈ 0,1 n)
+
+pilot:                     # 30 позиций пилота (инструкция аннотатора, раздел 16)
+  seed: 10                 # из них контроль правил исключения — исходные вопросы с маркерами E1/E4
+  dynamic_controls: 5
+  new: 20
+  unanswerable: 4
+
+# Домены новых позиций по регионам; квоты делятся поровну между регионами, затем между доменами.
+# Состав корпуса — 19 доменов (data/corpus_snapshot/netloc_month_counts.csv). Не используются: cn.reuters.com,
+# news.sina.com.tw, www2.hkej.com (нет документов в окне), inews.hket.com и topick.hket.com (Гонконг уже представлен
+# статьями HKET из seed pool), www.rfi.fr (30 статей seed pool).
+regions:
+  КНР: [world.people.com.cn, finance.people.com.cn, www.ithome.com]
+  Тайвань: [www.chinatimes.com, news.ltn.com.tw, www.nownews.com, www.cna.com.tw]
+  Гонконг: [www.hk01.com, news.mingpao.com, www.etnet.com.hk, www.am730.com.hk, orientaldaily.on.cc]
+  Сингапур: [www.zaobao.com.sg]
+
+filters:
+  lang_codes: [zh]
+  text_len_min: 600        # символов текста документа: короче — обычно нет проверяемого факта
+  text_len_max: 8000       # длиннее — тяжело для разметки
+  # Корпус собран выгрузками за 20 месяцев (2016-08 — 2023-08, data/corpus_snapshot/netloc_month_counts.csv);
+  # берутся все месяцы, кроме ячеек «домен × месяц» с малым числом документов (края выгрузок).
+  month_from: "2016-08"
+  month_to: "2023-08"
+  min_cell_documents: 100
+  exclude_uri_regex: "/(tag|tags|search|category|author)/|^https?://[^/]+/?$"   # служебные страницы и главные

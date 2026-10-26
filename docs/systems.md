@@ -20,8 +20,8 @@
 
 | Компонент | Реализация |
 |---|---|
-| Корпус | китайскоязычные СМИ КНР, Тайваня, Гонконга, Сингапура; метаданные в PostgreSQL `webmedia.webpages` (`webpage_id`, `urn_uuid`, `uri`, дата, `lang_code`) |
-| Индекс | Qdrant, коллекция `webmedia_sentence_transformers_distiluse_base_multilingual_cased_v2`, 23,9 млн точек, вектор 512; идентификатор точки — `webpage_id << 16 \| chunk_number`; в payload — предпосчитанный русский перевод фрагмента |
+| Корпус | китайскоязычные СМИ КНР, Тайваня, Гонконга, Сингапура и китайская служба RFI: 19 доменов, около 2,07 млн веб-страниц, даты 2016-08 — 2023-08; PostgreSQL `webmedia.webpages` (`id` = `webpage_id`, `urn_uuid`, `uri`, `netloc`, `date_time`, `lang_code`, текст `text_content` и очищенный текст `text_content_trafilatura` в jsonb с полями `title`, `text`); перевода на русский в базе нет (проверено 2026-10-23, ADR-023) |
+| Индекс | Qdrant, коллекция `webmedia_sentence_transformers_distiluse_base_multilingual_cased_v2`, 23,9 млн точек, вектор 512; идентификатор точки — `webpage_id << 16 \| chunk_number`, фрагменты нумеруются с 0; в payload — `chunk` (текст фрагмента на языке оригинала), `chunk_number`, `urn_uuid`; русского перевода фрагментов в активной коллекции нет (проверено 2026-10-23), промышленная система переводит найденные фрагменты при запросе |
 | Эмбеддинги | `distiluse-base-multilingual-cased-v2` (SentenceTransformers), поиск плотный, без BM25 и реранкера |
 | Переписывание запроса | промпт `translate_model.txt`: чистка русского запроса и перевод на язык поиска |
 | Retrieval | `query_points(limit=top_k, score_threshold)`, дедупликация до `max_pages` уникальных `webpage_id`, подгрузка полных текстов из PostgreSQL; параметры прогона оценки: $`K_{\mathrm{prod}}=5`$ фрагментов (`top_k`), три полных документа (`max_pages`), порог $`0.3`$ (в API промышленной системы эти параметры называются `k`, `m`, `treshold`) |

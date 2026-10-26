@@ -53,21 +53,33 @@ def expand_env(value: Any) -> Any:
     return value
 
 
+def load_env() -> None:
+    """Загружает переменные окружения из ``.env`` в корне репозитория.
+
+    Если в нём задана ``CORPUS_ENV_FILE``, дополнительно читается указанный файл (например,
+    ``production/.env`` промышленной системы) без перезаписи уже заданных значений: учётные
+    данные корпуса берутся оттуда, а адреса туннеля из ``.env`` репозитория имеют приоритет.
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    load_dotenv(REPO_ROOT / ".env")
+    corpus_env = os.environ.get("CORPUS_ENV_FILE")
+    if corpus_env:
+        load_dotenv(corpus_env, override=False)
+
+
 def load_config(path: str | Path) -> dict:
     """Читает YAML-конфигурацию из ``code/configs`` и подставляет переменные окружения.
 
-    Переменные берутся из файла ``.env`` в корне репозитория (если установлен
-    ``python-dotenv``) и из окружения процесса. Зависимости импортируются лениво,
-    чтобы пакет импортировался без установленного виртуального окружения.
+    Переменные берутся из ``.env`` (см. :func:`load_env`) и из окружения процесса.
+    Зависимости импортируются лениво, чтобы пакет импортировался без установленного
+    виртуального окружения.
     """
     import yaml  # noqa: WPS433 — ленивый импорт третьесторонней зависимости
 
-    try:
-        from dotenv import load_dotenv
-
-        load_dotenv(REPO_ROOT / ".env")
-    except ImportError:
-        pass
+    load_env()
     with open(path, encoding="utf-8") as fh:
         raw = yaml.safe_load(fh) or {}
     return expand_env(raw)

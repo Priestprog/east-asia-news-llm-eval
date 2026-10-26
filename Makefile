@@ -16,7 +16,7 @@ GS_VERSION   ?= v1.0
 # Идентификатор прогона: дата-время и имя конфигурации системы (например 20270115-093000-prod).
 RUN_ID       ?= $(shell date +%Y%m%d-%H%M%S)-$(notdir $(basename $(SYSTEM)))
 
-.PHONY: help audit drafts agreement build-gs run judge validate stats tables check
+.PHONY: help audit seed-remap snapshot sample drafts agreement build-gs run judge validate stats tables check
 
 help: ## список целей
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -28,8 +28,18 @@ audit: ## загрузка FreshQA, RGB, CDQA, ChronoQA, DRAGOn в data/external
 
 # --- Построение эталонной выборки G = G+ ⊔ G⊥ -------------------------------------------
 
+seed-remap: ## seed pool: заголовки статей, warc_id → webpage_id (нужен туннель к корпусу), seed_pool.jsonl
+	$(PYTHON) -m code.annotation.remap_seed_pool all
+
+snapshot: ## снимок D_t0: все webpage_id коллекции Qdrant, data/corpus_snapshot/meta.json (нужен туннель)
+	$(PYTHON) -m code.annotation.sample_documents snapshot
+
+sample: ## 300 позиций для черновиков, резерв и пилот → data/seed_pool/sampled_documents.jsonl, тексты в data/_cache/
+	$(PYTHON) -m code.annotation.sample_documents sample
+	$(PYTHON) -m code.annotation.sample_documents fetch
+
 drafts: ## отбор документов webmedia ∩ Qdrant, черновики генератором g_draft на модели ℓ_draft ∉ L, листы для R=3 аннотаторов
-	$(PYTHON) -m code.annotation.sample_documents --config $(EVAL_CONFIG)
+	$(PYTHON) -m code.annotation.sample_documents sample
 	$(PYTHON) -m code.annotation.generate_drafts --config $(EVAL_CONFIG)
 	$(PYTHON) -m code.annotation.export_sheets --config $(EVAL_CONFIG)
 

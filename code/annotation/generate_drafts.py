@@ -46,10 +46,17 @@ class Draft:
     seed_pool_ref: str | None = None      # ссылка на запись seed pool, если черновик из неё
 
 
-def load_seed_pool(questions_path: str, mapping_path: str) -> list[dict]:
-    """Читает старые вопросы и mapping ``warc_id → webpage_id``; записи без соответствия отбрасываются
-    с записью в отчёт (ключ ``warc_id`` lossy, покрытие корпуса ~67 %)."""
-    raise NotImplementedError("реализация — часть работы")
+def load_seed_pool(path: str = "data/seed_pool/seed_pool.jsonl") -> list[dict]:
+    """Вопросы seed pool с идентификаторами документов (``remap_seed_pool seedpool``).
+
+    Возвращаются только вопросы, статья которых однозначно найдена в ``webmedia.webpages`` и
+    проиндексирована в Qdrant; потери с причинами — в ``data/seed_pool/provenance.md``.
+    """
+    import json
+
+    with open(path, encoding="utf-8") as fh:
+        items = [json.loads(line) for line in fh if line.strip()]
+    return [q for q in items if q["webpage_id"] is not None and q["in_qdrant"]]
 
 
 def build_draft_prompt(doc_ru: str, doc_zh: str, meta: DocumentRef, prompt_id: str = "draft-v1") -> list[dict]:
