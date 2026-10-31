@@ -1,0 +1,35 @@
+# Разметка пилота в Argilla и материалы для аннотаторов (docs/annotation_guidelines.md).
+# Учётные данные владельца Argilla — ARGILLA_API_URL и ARGILLA_API_KEY в .env; пароли аннотаторов
+# пишутся только в data/_private/ (в репозиторий не входит).
+
+paths:
+  positions: data/seed_pool/sampled_documents.jsonl
+  drafts: data/golden_set/v0.1-pilot/drafts.jsonl
+  documents: data/_cache/documents
+  translations: data/_cache/translations
+  snippet_translations: data/_cache/translations/snippets.json
+  retrieval: data/_cache/retrieval/pilot_top20.jsonl   # переводы фрагментов не публикуются (ADR-025)
+  annotations: data/golden_set/v0.1-pilot/annotations.jsonl
+  accounts: data/_private/annotator_accounts.csv
+  guidelines: docs/annotation_guidelines.md
+  preview: data/_cache/argilla_preview.html
+
+# Топ-K ретривера промышленной системы у всех позиций пилота (решение 30.10: роли не раскрываются)
+retrieval:
+  embedder: distiluse-base-multilingual-cased-v2   # как у f_prod (rag_module.py)
+  k: 20
+  formulations: [ru, en, zh]                       # вопрос черновика и его переводы моделью перевода
+  snippet_chars: 300
+  translate_snippets: true
+  workers: 3
+
+argilla:
+  api_url: ${ARGILLA_API_URL}
+  api_key: ${ARGILLA_API_KEY}
+  workspace: golden-set
+  adjudication_workspace: adjudication
+  dataset: pilot-v0.1
+  min_submitted: 3              # R = 3 независимых ответа на запись
+  annotators: [a1, a2, a3]      # коды аннотаторов; соответствие людям хранится вне репозитория
+  adjudicator: adj
+  seed: 20260917                # порядок записей
