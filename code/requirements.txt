@@ -6,6 +6,7 @@ scipy>=1.11,<2.0
 pyyaml>=6.0,<7.0
 jsonschema>=4.19,<5.0
 openai>=1.30,<3.0
+anthropic>=2.3,<3.0   # модель черновиков ℓ_draft (code/configs/drafts.yaml)
 qdrant-client>=1.15,<1.16    # сервер корпуса — Qdrant 1.15.4; клиент должен отличаться не более чем на минорную версию
 psycopg[binary]>=3.1,<4.0
 pymorphy3>=2.0,<3.0
@@ -17,3 +18,4 @@ tqdm>=4.66,<5.0
 matplotlib>=3.8,<4.0
 requests>=2.31,<3.0
 python-dotenv>=1.0,<2.0
+argilla==2.8.0

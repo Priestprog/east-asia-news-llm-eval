@@ -16,7 +16,7 @@ GS_VERSION   ?= v1.0
 # Идентификатор прогона: дата-время и имя конфигурации системы (например 20270115-093000-prod).
 RUN_ID       ?= $(shell date +%Y%m%d-%H%M%S)-$(notdir $(basename $(SYSTEM)))
 
-.PHONY: help audit seed-remap snapshot sample drafts agreement build-gs run judge validate stats tables check
+.PHONY: help audit seed-remap snapshot sample drafts pilot-drafts translate topk annotation-setup annotation-push annotation-progress annotation-pull agreement build-gs run judge validate stats tables check
 
 help: ## список целей
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -40,8 +40,29 @@ sample: ## 300 позиций для черновиков, резерв и пи�
 
 drafts: ## отбор документов webmedia ∩ Qdrant, черновики генератором g_draft на модели ℓ_draft ∉ L, листы для R=3 аннотаторов
 	$(PYTHON) -m code.annotation.sample_documents sample
-	$(PYTHON) -m code.annotation.generate_drafts --config $(EVAL_CONFIG)
+	$(PYTHON) -m code.annotation.generate_drafts
 	$(PYTHON) -m code.annotation.export_sheets --config $(EVAL_CONFIG)
+
+pilot-drafts: ## черновики 30 позиций пилота моделью ℓ_draft ∉ L (code/configs/drafts.yaml) → data/golden_set/v0.1-pilot/drafts.jsonl
+	$(PYTHON) -m code.annotation.generate_drafts --pilot
+
+translate: ## перевод документов пилота по абзацам моделью перевода (ADR-025) → data/_cache/translations/, отчёт в v0.1-pilot/
+	$(PYTHON) -m code.annotation.translate_documents --pilot
+
+topk: ## топ-20 ретривера f_prod у всех позиций пилота (нужен туннель к корпусу) → data/_cache/retrieval/pilot_top20.jsonl (не в git)
+	$(PYTHON) -m code.annotation.retrieve_topk
+
+annotation-setup: ## Argilla: рабочие пространства и учётные записи a1–a3, adj; пароли в data/_private/ (не в git)
+	$(PYTHON) -m code.annotation.argilla_tasks setup
+
+annotation-push: ## Argilla: датасет пилота (3 ответа на запись) и записи; предпросмотр — PREVIEW=путь.html
+	$(PYTHON) -m code.annotation.argilla_tasks push $(if $(PREVIEW),--preview $(PREVIEW))
+
+annotation-progress: ## Argilla: ход разметки по аннотаторам
+	$(PYTHON) -m code.annotation.argilla_tasks progress
+
+annotation-pull: ## Argilla: отправленные ответы → data/golden_set/v0.1-pilot/annotations.jsonl
+	$(PYTHON) -m code.annotation.argilla_tasks pull
 
 agreement: ## согласие аннотаторов: α Криппендорфа (≥0.67 допустимо, ≥0.8 надёжно), Fleiss κ, попарный F1 ≥ 0.8
 	$(PYTHON) -m code.annotation.agreement --config $(EVAL_CONFIG)

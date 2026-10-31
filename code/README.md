@@ -38,11 +38,13 @@ pip install -r requirements.txt
 | `IVRAN_LLM_BASE_URL` | OpenAI-совместимый адрес провайдера ИВ РАН (llama-swap) для открытых моделей $`\mathcal{L}`$ и судьи |
 | `IVRAN_LLM_API_KEY` | ключ провайдера |
 | `IVRAN_LLM_MODEL` | модель генератора промышленной системы (ожидаемая; фактическая берётся из поля `model` ответа) |
+| `ANTHROPIC_API_KEY` | ключ API модели черновиков $`\ell_{\mathrm{draft}}`$ (`code/configs/drafts.yaml`, ADR-022) |
 | `JUDGE_LLM_MODEL` | модель-судья; должна быть вне $`\mathcal{L}`$ и не совпадать с генератором прода |
 | `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION` | векторная база корпуса (23,9 млн фрагментов) — для пересечения с `webmedia` и снимка $`\mathcal{I}`$ |
 | `WEBMEDIA_POSTGRES_HOST`, `WEBMEDIA_POSTGRES_PORT` | PostgreSQL с таблицей `webmedia.webpages` (метаданные документов, `webpage_id`, `urn_uuid`, `uri`) |
 | `WEBMEDIA_CC_NEWS_USER`, `WEBMEDIA_CC_NEWS_USER_PASSWORD`, `WEBMEDIA_CC_NEWS_DB_NAME` | учётные данные и имя базы `webmedia` |
 | `PROD_API_BASE_URL` | HTTP API промышленной системы «Chinese Media Analysis» ($`f_{\mathrm{prod}}`$) |
+| `ARGILLA_API_URL`, `ARGILLA_API_KEY` | платформа разметки Argilla (`https://annotate.ai.ivran.ru`) и ключ владельца (`code/configs/annotation.yaml`) |
 
 Пример `.env` (значения условные):
 
@@ -51,6 +53,7 @@ IVRAN_LLM_BASE_URL=http://llm.example.local/v1
 IVRAN_LLM_API_KEY=...
 IVRAN_LLM_MODEL=DeepSeek-R1-Distill-Qwen-32B-Q5_K_M
 JUDGE_LLM_MODEL=...
+ANTHROPIC_API_KEY=...
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
 QDRANT_COLLECTION=cc_news
@@ -60,6 +63,8 @@ WEBMEDIA_CC_NEWS_USER=...
 WEBMEDIA_CC_NEWS_USER_PASSWORD=...
 WEBMEDIA_CC_NEWS_DB_NAME=webmedia
 PROD_API_BASE_URL=http://localhost:10090
+ARGILLA_API_URL=https://annotate.ai.ivran.ru
+ARGILLA_API_KEY=...
 ```
 
 Файл `.env` не коммитится (`*.env`, `secret.env` в `.gitignore`).
