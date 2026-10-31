@@ -1,108 +1,451 @@
-r"""Черновики записей Golden Set моделью $g_{\mathrm{draft}} \notin \mathcal{L}$.
+r"""Черновики записей эталонной выборки моделью $\ell_{\mathrm{draft}} \notin \mathcal{L}$ (ADR-022, ADR-023).
 
-По каждому отобранному документу (и по паре документов для ``requires_multi_doc``)
-модель-черновик формирует кортеж $(q, a, S, \text{evidence}, \text{тип}, \text{дата-якорь})$:
-вопрос на русском с явной датой-якорем, канонический ответ и алиасы, идентификаторы
-подтверждающих документов $S \subset \mathcal{I}$, короткие evidence-span (ru и zh),
-тип вопроса и предварительную метку инвариантности. Черновик — только заготовка для
-аннотаторов; в $G$ он попадает после независимой разметки и согласия.
+Позиция — документ корпуса из ``data/seed_pool/sampled_documents.jsonl``; по каждой позиции
+генератор $g_{\mathrm{draft}}$ формирует один кортеж $(q, a, S, \text{evidence}, \text{тип}, \text{дата})$:
+вопрос на русском с явной датой-якорем, канонический ответ и алиасы, $S = \{\iota_j\}$ —
+документ позиции, evidence-span на китайском и русском, тип вопроса, категорию, метку
+инвариантности и сложность. Задание зависит от роли позиции:
 
-Отдельно генерируются кандидаты в $G^{\bot}$ — вопросы, инвариантные по форме,
-но не подтверждаемые корпусом ($n_{\bot} \approx 0.1\,n$; правильный ответ — отказ).
+* ``answerable`` — вопрос по документу; для статей seed pool за основу берётся один из исходных
+  вопросов промышленной системы (``seed_refs``), переформулированный по правилам $E_1$–$E_5$;
+* ``dynamic_control`` — контроль применения правил: вопросом служит исходный вопрос seed pool
+  с маркером $E_1$ или $E_4$ без изменений, модель заполняет остальные поля;
+* ``unanswerable_candidate`` — кандидат в $G^{\bot}$: вопрос с верной предпосылкой, ответа на
+  который в документе нет; проверка выдачей ретривера ($K = 20$) выполняется при подготовке листов.
 
-Старые 388 вопросов (``EN_rag_questions.json`` / ``RU_rag_questions.json`` прод-репозитория)
-используются как seed pool после перекладки ``warc_id`` → ``webpage_id``; эталонных
-ответов у них нет, поэтому они проходят тот же путь, что и новые черновики.
+Черновик — только заготовка: в $G$ запись попадает после независимой разметки $R = 3$
+аннотаторами. Промпт, модель и параметры — ``code/configs/drafts.yaml``. Параметр
+``temperature`` у модели черновиков недоступен, поэтому воспроизводимость обеспечивается
+не детерминизмом генерации, а хранением черновика без изменений (``provenance.draft``)
+вместе с фактическим полем ``model`` ответа и ``request_id``.
+
+К каждому черновику добавляются автоматические проверки (``checks``): формат даты-якоря по
+схеме выборки, наличие даты в тексте вопроса, эвристики правил $E_1$, $E_2$, $E_4$
+(``code/audit/markers.py``), дословное вхождение ``evidence_span_zh`` в текст документа.
+Это подсказки координатору, а не разметка.
+
+Запуск пилота (30 позиций): ``python -m code.annotation.generate_drafts --pilot``;
+повторный запуск дописывает только недостающие позиции.
 """
 
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass, field
+import json
+import re
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Sequence
 
-from .sample_documents import DocumentRef
+from code import REPO_ROOT, load_config, load_env
+from code.audit.markers import DATE_ANCHOR, SEED_POOL_RULES, STATIC_RULES, has
+
+DEFAULT_CONFIG = "code/configs/drafts.yaml"
+
+QUESTION_TYPES = ["who", "what", "when", "where", "how_many", "which", "yes_no", "list"]
+CATEGORIES = ["politics", "economy", "society", "international", "security", "technology",
+              "culture", "health", "environment", "other"]
+ANSWER_TYPES = ["entity", "person", "organization", "location", "date", "number", "quantity",
+                "percentage", "boolean", "list", "short_text"]
+LABELS = ["never_changing", "slow_changing_anchored"]
+DIFFICULTIES = ["easy", "medium", "hard"]
+
+# Формат даты-якоря — как в data/golden_set/schema.json (time_invariance.anchor_date).
+ANCHOR_RE = re.compile(r"^[0-9]{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12][0-9]|3[01]))?|-Q[1-4]|-H[12])?$")
+EVIDENCE_MAX = 300
+
+# Схема ответа модели (structured outputs). Пустая строка и -1 вместо null.
+DRAFT_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "suitable": {"type": "boolean"},
+        "unsuitable_reason": {"type": "string"},
+        "question_ru": {"type": "string"},
+        "answer_canonical": {"type": "string"},
+        "answer_aliases": {"type": "array", "items": {"type": "string"}},
+        "answer_type": {"type": "string", "enum": ANSWER_TYPES},
+        "evidence_span_zh": {"type": "string"},
+        "evidence_span_ru": {"type": "string"},
+        "question_type": {"type": "string", "enum": QUESTION_TYPES},
+        "category": {"type": "string", "enum": CATEGORIES},
+        "anchor_date": {"type": "string"},
+        "time_invariance_label": {"type": "string", "enum": LABELS},
+        "difficulty": {"type": "string", "enum": DIFFICULTIES},
+        "seed_question_used": {"type": "integer"},
+        "coordinator_note": {"type": "string"},
+    },
+    "required": ["suitable", "unsuitable_reason", "question_ru", "answer_canonical", "answer_aliases",
+                 "answer_type", "evidence_span_zh", "evidence_span_ru", "question_type", "category",
+                 "anchor_date", "time_invariance_label", "difficulty", "seed_question_used",
+                 "coordinator_note"],
+    "additionalProperties": False,
+}
 
 
 @dataclass
 class Draft:
-    """Черновик записи; поля соответствуют схеме ``data/golden_set/schema.json``."""
+    """Черновик по позиции; поля ``question_ru``, ``answer_canonical``, ``answer_aliases`` и
+    ``supporting_ids`` переносятся в ``provenance.draft`` записи ``data/golden_set/schema.json``."""
 
-    draft_id: str
-    question_ru: str
-    answer_canonical: str | None          # None — кандидат в G⊥
+    position_id: str
+    webpage_id: int
+    role: str
+    origin: str
+    pilot: bool
+    question_ru: str = ""
+    answer_canonical: str | None = None          # None — кандидат в G⊥
     answer_aliases: list[str] = field(default_factory=list)
-    answer_type: str = "entity"           # entity | date | number | short_text | ...
+    answer_type: str = ""
     supporting_ids: list[int] = field(default_factory=list)   # S ⊂ I
-    evidence_span_ru: str = ""
     evidence_span_zh: str = ""
-    question_type: str = "factoid"
-    category: str | None = None
-    anchor_date: str | None = None        # дата-якорь в вопросе
+    evidence_span_ru: str = ""
+    question_type: str = ""
+    category: str = ""
+    anchor_date: str = ""
+    time_invariance_label: str = ""
+    difficulty: str = ""
     requires_multi_doc: bool = False
-    answerable: bool = True               # False — кандидат в G⊥
-    draft_model: str = ""
-    draft_prompt_id: str = "draft-v1"
-    seed_pool_ref: str | None = None      # ссылка на запись seed pool, если черновик из неё
+    answerable: bool = True                      # False — кандидат в G⊥
+    suitable: bool = True
+    unsuitable_reason: str = ""
+    coordinator_note: str = ""
+    seed_pool_ref: str | None = None             # seed_idx исходного вопроса seed pool
+    draft_model: str = ""                        # фактическое поле model ответа
+    draft_prompt_id: str = ""
+    channel: str = "api"                         # api | session (запрос выполнен вне API, см. export_requests)
+    request_id: str | None = None
+    stop_reason: str | None = None
+    usage: dict = field(default_factory=dict)
+    error: str | None = None
+    checks: dict = field(default_factory=dict)
+    created_at: str = ""
 
 
-def load_seed_pool(path: str = "data/seed_pool/seed_pool.jsonl") -> list[dict]:
-    """Вопросы seed pool с идентификаторами документов (``remap_seed_pool seedpool``).
-
-    Возвращаются только вопросы, статья которых однозначно найдена в ``webmedia.webpages`` и
-    проиндексирована в Qdrant; потери с причинами — в ``data/seed_pool/provenance.md``.
-    """
-    import json
-
+def read_jsonl(path: str | Path) -> list[dict]:
     with open(path, encoding="utf-8") as fh:
-        items = [json.loads(line) for line in fh if line.strip()]
-    return [q for q in items if q["webpage_id"] is not None and q["in_qdrant"]]
+        return [json.loads(line) for line in fh if line.strip()]
 
 
-def build_draft_prompt(doc_ru: str, doc_zh: str, meta: DocumentRef, prompt_id: str = "draft-v1") -> list[dict]:
-    r"""Промпт модели-черновика: требования к статичности (правила $E_1$–$E_5$ в инструкции),
-    обязательная дата-якорь, канонический ответ + алиасы, evidence-span."""
-    raise NotImplementedError("реализация — часть работы")
+def load_positions(path: str | Path, pilot: bool = False, include_reserve: bool = False) -> list[dict]:
+    """Позиции для черновиков: пилот (30) либо основные (300), по желанию с резервом (60)."""
+    positions = [p for p in read_jsonl(path) if not p.get("replaced_by")]
+    if pilot:
+        return [p for p in positions if p["pilot"]]
+    return [p for p in positions if include_reserve or not p["reserve"]]
 
 
-def generate_drafts(
-    docs: Sequence[DocumentRef],
-    client,
-    model: str,
-    prompt_id: str = "draft-v1",
-    per_doc: int = 2,
-) -> list[Draft]:
-    r"""Черновики по документам моделью $g_{\mathrm{draft}}$ (``temperature = 0``).
+def load_seed_pool(path: str | Path) -> dict[int, dict]:
+    """Вопросы seed pool по ``seed_idx`` (``data/seed_pool/seed_pool.jsonl``)."""
+    return {int(q["seed_idx"]): q for q in read_jsonl(path)}
 
-    Модель-черновик не должна принадлежать $\mathcal{L}$ и не должна совпадать с генератором
-    прода, иначе вопросы будут смещены в сторону её собственных знаний.
+
+def load_document(documents_dir: str | Path, webpage_id: int) -> dict:
+    """Текст документа из локального кэша ``data/_cache/documents`` (``sample_documents fetch``)."""
+    path = Path(documents_dir) / f"{webpage_id}.json"
+    if not path.exists():
+        raise FileNotFoundError(f"нет текста документа {webpage_id}: запустите sample_documents fetch")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def build_draft_prompt(position: dict, doc: dict, seed_pool: dict[int, dict], prompt: dict) -> str:
+    r"""Сообщение пользователя: метаданные позиции, текст оригинала $x^{zh}_j$ и задание по роли.
+
+    Перевода в корпусе нет (ADR-023), поэтому модель получает только оригинал. Для статей
+    seed pool к заданию добавляются исходные вопросы промышленной системы.
     """
-    raise NotImplementedError("реализация — часть работы")
+    role = position["role"]
+    task_key = "answerable_seed" if role == "answerable" and position["origin"] == "seed" else role
+    lines = [
+        f"Документ webpage_id={position['webpage_id']}; источник: {position['netloc']} "
+        f"({position['region']}); дата публикации: {position['published_at']}.",
+        f"Заголовок: {(doc.get('title_zh') or '').strip()}",
+        "<document>",
+        (doc.get("text_zh") or "").strip(),
+        "</document>",
+        "",
+        prompt["tasks"][task_key].strip(),
+    ]
+    if task_key == "answerable_seed":
+        lines.append("")
+        lines.append("Исходные вопросы:")
+        for idx in position["seed_refs"]:
+            lines.append(f"{idx}. {seed_pool[idx]['question_ru']}")
+    elif task_key == "dynamic_control":
+        idx = position["control_seed_idx"]
+        lines.append("")
+        lines.append(f"Вопрос (номер {idx}): {seed_pool[idx]['question_ru']}")
+    return "\n".join(lines)
 
 
-def generate_unanswerable_drafts(docs: Sequence[DocumentRef], client, model: str, n: int) -> list[Draft]:
-    r"""Кандидаты в $G^{\bot}$: вопросы с датой-якорем о событиях, отсутствующих в корпусе
-    (проверяется поиском по Qdrant: ни один документ не подтверждает ответ)."""
-    raise NotImplementedError("реализация — часть работы")
+def run_checks(draft: Draft, doc: dict, seed_question: str | None) -> dict:
+    """Автоматические проверки черновика — подсказки координатору, не разметка."""
+    q = draft.question_ru
+    text = re.sub(r"\s+", "", doc.get("text_zh") or "") + re.sub(r"\s+", "", doc.get("title_zh") or "")
+    span = re.sub(r"\s+", "", draft.evidence_span_zh)
+    checks = {
+        "anchor_format_ok": bool(ANCHOR_RE.match(draft.anchor_date or "")),
+        "date_in_question": has(DATE_ANCHOR["ru"], q),
+        "markers": [rule for rule in STATIC_RULES if has(SEED_POOL_RULES[rule][1], q)],
+        "compound": has(SEED_POOL_RULES["compound"][1], q),
+        "evidence_in_document": bool(span) and span in text,
+        "evidence_len_ok": len(draft.evidence_span_zh) <= EVIDENCE_MAX and len(draft.evidence_span_ru) <= EVIDENCE_MAX,
+    }
+    if seed_question is not None:
+        checks["control_question_verbatim"] = q.strip() == seed_question.strip()
+    if not draft.answerable:
+        checks["answer_empty"] = not draft.answer_canonical and not draft.answer_aliases
+    return checks
 
 
-def write_drafts(drafts: Sequence[Draft], path: str) -> None:
-    """Записывает черновики в JSONL."""
-    raise NotImplementedError("реализация — часть работы")
+def generate_one(position: dict, doc: dict, seed_pool: dict[int, dict], client, cfg: dict) -> Draft:
+    r"""Один черновик моделью $g_{\mathrm{draft}}$; при подмене модели прогон прерывается (ADR-009)."""
+    import anthropic
+
+    prompt = cfg["prompts"][cfg["prompt_id"]]
+    draft = new_draft(position, cfg)
+    try:
+        response = client.messages.create(
+            model=cfg["draft_model"],
+            max_tokens=cfg["max_tokens"],
+            system=[{"type": "text", "text": prompt["system"], "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": build_draft_prompt(position, doc, seed_pool, prompt)}],
+            output_config={"effort": cfg["effort"], "format": {"type": "json_schema", "schema": DRAFT_SCHEMA}},
+        )
+    except anthropic.APIStatusError as exc:
+        draft.error = f"HTTP {exc.status_code}: {exc.message}"
+        return draft
+    except anthropic.APIConnectionError as exc:
+        draft.error = f"соединение: {exc}"
+        return draft
+
+    draft.draft_model = response.model
+    draft.request_id = response._request_id
+    draft.stop_reason = response.stop_reason
+    draft.usage = {
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens,
+        "cache_read_input_tokens": response.usage.cache_read_input_tokens or 0,
+        "cache_creation_input_tokens": response.usage.cache_creation_input_tokens or 0,
+    }
+    if response.model != cfg["draft_model"]:
+        raise RuntimeError(f"ответ модели {response.model}, ожидалась {cfg['draft_model']}: прогон прерван")
+    if response.stop_reason == "refusal":
+        category = response.stop_details.category if response.stop_details else None
+        draft.error = f"отказ модели (категория {category})"
+        return draft
+    if response.stop_reason == "max_tokens":
+        draft.error = "ответ обрезан по max_tokens"
+        return draft
+
+    text = next((b.text for b in response.content if b.type == "text"), "")
+    try:
+        out = json.loads(text)
+    except json.JSONDecodeError as exc:
+        draft.error = f"ответ не разобран как JSON: {exc}"
+        return draft
+    return fill_draft(draft, out, position, doc, seed_pool)
+
+
+def new_draft(position: dict, cfg: dict) -> Draft:
+    return Draft(position_id=position["position_id"], webpage_id=position["webpage_id"],
+                 role=position["role"], origin=position["origin"], pilot=position["pilot"],
+                 draft_prompt_id=cfg["prompt_id"], answerable=position["role"] != "unanswerable_candidate",
+                 created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+def fill_draft(draft: Draft, out: dict, position: dict, doc: dict, seed_pool: dict[int, dict]) -> Draft:
+    """Переносит ответ модели (объект по ``DRAFT_SCHEMA``) в черновик и добавляет проверки."""
+    draft.question_ru = out["question_ru"].strip()
+    draft.answer_canonical = out["answer_canonical"].strip() or None
+    draft.answer_aliases = [a.strip() for a in out["answer_aliases"] if a.strip()]
+    draft.answer_type = out["answer_type"]
+    draft.supporting_ids = [position["webpage_id"]] if draft.answerable else []
+    draft.evidence_span_zh = out["evidence_span_zh"].strip()
+    draft.evidence_span_ru = out["evidence_span_ru"].strip()
+    draft.question_type = out["question_type"]
+    draft.category = out["category"]
+    draft.anchor_date = out["anchor_date"].strip()
+    draft.time_invariance_label = out["time_invariance_label"]
+    draft.difficulty = out["difficulty"]
+    draft.suitable = out["suitable"]
+    draft.unsuitable_reason = out["unsuitable_reason"].strip()
+    draft.coordinator_note = out["coordinator_note"].strip()
+    used = out["seed_question_used"]
+    if position["role"] == "dynamic_control":
+        draft.seed_pool_ref = str(position["control_seed_idx"])
+    elif used in position.get("seed_refs", []):
+        draft.seed_pool_ref = str(used)
+    control_q = seed_pool[position["control_seed_idx"]]["question_ru"] if position["role"] == "dynamic_control" else None
+    draft.checks = run_checks(draft, doc, control_q)
+    return draft
+
+
+def generate_drafts(positions: Sequence[dict], seed_pool: dict[int, dict], cfg: dict, out_path: Path,
+                    workers: int) -> list[Draft]:
+    r"""Черновики по позициям в ``workers`` параллельных запросах; каждый черновик дописывается
+    в ``out_path`` сразу после получения, поэтому прерванный прогон продолжается с места остановки."""
+    import anthropic
+
+    client = anthropic.Anthropic(max_retries=cfg["max_retries"])
+    docs = {p["webpage_id"]: load_document(REPO_ROOT / cfg["paths"]["documents"], p["webpage_id"]) for p in positions}
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    drafts: list[Draft] = []
+    with ThreadPoolExecutor(max_workers=workers) as pool, open(out_path, "a", encoding="utf-8") as fh:
+        futures = {pool.submit(generate_one, p, docs[p["webpage_id"]], seed_pool, client, cfg): p for p in positions}
+        for done, future in enumerate(as_completed(futures), 1):
+            try:
+                draft = future.result()
+            except RuntimeError:
+                pool.shutdown(cancel_futures=True)
+                raise
+            drafts.append(draft)
+            fh.write(json.dumps(asdict(draft), ensure_ascii=False) + "\n")
+            fh.flush()
+            status = draft.error or ("ok" if draft.suitable else "непригоден")
+            print(f"[{done}/{len(positions)}] {draft.position_id} {draft.role}: {status}", file=sys.stderr)
+    return drafts
+
+
+def export_requests(positions: Sequence[dict], seed_pool: dict[int, dict], cfg: dict, out_dir: Path) -> None:
+    r"""Запросы к модели черновиков в файлы ``<position_id>.json``: системный промпт, сообщение
+    пользователя, схема ответа, модель и усилие — ровно то, что отправил бы :func:`generate_one`.
+
+    Нужны, когда запрос выполняется вне API (``channel = "session"``): каждый файл обрабатывается
+    отдельным вызовом той же модели, видящим только этот запрос; ответ — JSON по ``DRAFT_SCHEMA``
+    в ``<position_id>.json`` каталога ответов (:func:`import_responses`).
+    """
+    prompt = cfg["prompts"][cfg["prompt_id"]]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for p in positions:
+        doc = load_document(REPO_ROOT / cfg["paths"]["documents"], p["webpage_id"])
+        request = {
+            "position_id": p["position_id"],
+            "model": cfg["draft_model"],
+            "effort": cfg["effort"],
+            "prompt_id": cfg["prompt_id"],
+            "system": prompt["system"],
+            "user": build_draft_prompt(p, doc, seed_pool, prompt),
+            "response_schema": DRAFT_SCHEMA,
+        }
+        (out_dir / f"{p['position_id']}.json").write_text(json.dumps(request, ensure_ascii=False, indent=1),
+                                                          encoding="utf-8")
+
+
+def import_responses(positions: Sequence[dict], seed_pool: dict[int, dict], cfg: dict, responses_dir: Path,
+                     out_path: Path, model: str) -> list[Draft]:
+    """Черновики из ответов, полученных вне API: проверка по ``DRAFT_SCHEMA`` и те же проверки, что у API."""
+    import jsonschema
+
+    drafts = []
+    for p in positions:
+        draft = new_draft(p, cfg)
+        draft.channel, draft.draft_model = "session", model
+        path = responses_dir / f"{p['position_id']}.json"
+        if not path.exists():
+            draft.error = "нет ответа"
+        else:
+            draft.created_at = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat(timespec="seconds")
+            try:
+                out = json.loads(path.read_text(encoding="utf-8"))
+                jsonschema.validate(out, DRAFT_SCHEMA)
+            except (json.JSONDecodeError, jsonschema.ValidationError) as exc:
+                draft.error = f"ответ не соответствует схеме: {str(exc).splitlines()[0]}"
+            else:
+                doc = load_document(REPO_ROOT / cfg["paths"]["documents"], p["webpage_id"])
+                fill_draft(draft, out, p, doc, seed_pool)
+        drafts.append(draft)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("".join(json.dumps(asdict(d), ensure_ascii=False) + "\n" for d in drafts), encoding="utf-8")
+    return drafts
+
+
+def summarize(path: Path) -> str:
+    """Сводка по файлу черновиков: роли, ошибки, пригодность, проверки, токены."""
+    drafts = read_jsonl(path)
+    ok = [d for d in drafts if not d["error"]]
+    lines = [f"Черновиков: {len(drafts)}; с ошибкой: {len(drafts) - len(ok)}; файл: {path.relative_to(REPO_ROOT)}"]
+    roles: dict[str, int] = {}
+    for d in drafts:
+        roles[d["role"]] = roles.get(d["role"], 0) + 1
+    lines.append("Роли: " + ", ".join(f"{k} — {v}" for k, v in sorted(roles.items())))
+    lines.append(f"Непригодные документы (suitable = false): {sum(not d['suitable'] for d in ok)}")
+    for key in ("anchor_format_ok", "date_in_question", "evidence_in_document", "evidence_len_ok"):
+        lines.append(f"{key}: {sum(bool(d['checks'].get(key)) for d in ok)}/{len(ok)}")
+    flagged = [d for d in ok if d["checks"].get("markers") and d["role"] != "dynamic_control"]
+    lines.append(f"Маркеры E1/E2/E4 в вопросах (кроме контрольных): {len(flagged)}")
+    tokens_in = sum(d["usage"].get("input_tokens", 0) for d in drafts)
+    tokens_out = sum(d["usage"].get("output_tokens", 0) for d in drafts)
+    lines.append(f"Токены: входные {tokens_in}, выходные {tokens_out}")
+    return "\n".join(lines)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--config", default="code/configs/eval.yaml")
-    parser.add_argument("--documents", default="data/seed_pool/sampled_documents.jsonl")
-    parser.add_argument("--draft-model", required=False, help="модель g_draft ∉ L")
-    parser.add_argument("--out", default="data/golden_set/v0.1-pilot/drafts.jsonl")
+    parser.add_argument("--config", default=DEFAULT_CONFIG)
+    parser.add_argument("--pilot", action="store_true", help="только 30 позиций пилота")
+    parser.add_argument("--include-reserve", action="store_true", help="вместе с 60 резервными позициями")
+    parser.add_argument("--limit", type=int, default=None, help="не больше N позиций (отладка)")
+    parser.add_argument("--workers", type=int, default=None)
+    parser.add_argument("--out", default=None)
+    parser.add_argument("--dry-run", action="store_true", help="собрать промпты без вызова модели")
+    parser.add_argument("--summary", action="store_true", help="только сводка по готовому файлу")
+    parser.add_argument("--export-requests", type=Path, default=None,
+                        help="выгрузить запросы в каталог вместо вызова API")
+    parser.add_argument("--import-responses", type=Path, default=None,
+                        help="собрать черновики из ответов в каталоге (запросы выполнены вне API)")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    raise NotImplementedError(f"реализация — часть работы (аргументы: {vars(args)})")
+    load_env()
+    cfg = load_config(REPO_ROOT / args.config)
+    out_path = REPO_ROOT / (args.out or cfg["paths"]["out_pilot" if args.pilot else "out_main"])
+    if args.summary:
+        print(summarize(out_path))
+        return 0
+
+    positions = load_positions(REPO_ROOT / cfg["paths"]["positions"], pilot=args.pilot,
+                               include_reserve=args.include_reserve)
+    kept = [d for d in read_jsonl(out_path) if not d["error"]] if out_path.exists() else []
+    done = {d["position_id"] for d in kept}
+    todo = [p for p in positions if p["position_id"] not in done][: args.limit]
+    seed_pool = load_seed_pool(REPO_ROOT / cfg["paths"]["seed_pool"])
+    print(f"позиций: {len(positions)}, готово: {len(done)}, к генерации: {len(todo)}", file=sys.stderr)
+
+    if args.export_requests:
+        export_requests(positions, seed_pool, cfg, REPO_ROOT / args.export_requests)
+        print(f"запросов: {len(positions)} → {args.export_requests}", file=sys.stderr)
+        return 0
+    if args.import_responses:
+        import_responses(positions, seed_pool, cfg, REPO_ROOT / args.import_responses, out_path, cfg["draft_model"])
+        print(summarize(out_path))
+        return 0
+
+    if args.dry_run:
+        prompt = cfg["prompts"][cfg["prompt_id"]]
+        for p in todo:
+            doc = load_document(REPO_ROOT / cfg["paths"]["documents"], p["webpage_id"])
+            msg = build_draft_prompt(p, doc, seed_pool, prompt)
+            print(f"{p['position_id']} {p['role']}: {len(msg)} знаков")
+        return 0
+
+    if out_path.exists():
+        # строки с ошибками отбрасываются: эти позиции генерируются заново
+        out_path.write_text("".join(json.dumps(d, ensure_ascii=False) + "\n" for d in kept), encoding="utf-8")
+    try:
+        generate_drafts(todo, seed_pool, cfg, out_path, args.workers or cfg["workers"])
+    except TypeError as exc:
+        if "authentication" not in str(exc):
+            raise
+        print("нет учётных данных API модели черновиков: задайте ANTHROPIC_API_KEY в .env "
+              "(см. code/README.md)", file=sys.stderr)
+        return 2
+    print(summarize(out_path))
+    return 0
 
 
 if __name__ == "__main__":

@@ -14,7 +14,10 @@ r"""Снимок корпуса $D_{t_0}$ и отбор позиций для ч
   ``data/seed_pool/sampled_documents.jsonl`` и ``data/seed_pool/sampling_report.md``;
 * ``fetch`` — тексты документов позиций (оригинал и, если есть, перевод фрагментов из
   payload Qdrant) в локальный кэш ``data/_cache/documents/`` для черновиков; в репозиторий
-  тексты не входят.
+  тексты не входят;
+* ``replace`` — замена непригодной позиции резервной из той же страты (тот же домен, ближайший
+  месяц): резервная занимает её место в основном наборе и пилоте, заменённая остаётся в файле
+  с отметкой ``replaced_by`` и причиной.
 
 Ограничения снимка: ≥3 доменов, ≥2 регионов, охват ≥12 месяцев по $\tau_j \le t_0$.
 """
@@ -86,6 +89,14 @@ class Position:
     control_seed_idx: int | None = None
     category_hint: str | None = None
     text_len: int | None = None
+    replaces: str | None = None          # резервная позиция, занявшая место заменённой
+    replaced_by: str | None = None       # заменённая позиция: выведена из основного набора и пилота
+    replace_reason: str | None = None
+
+
+def is_main(p: Position) -> bool:
+    """Позиция основного набора: не резерв и не заменённая."""
+    return not p.reserve and not p.replaced_by
 
 
 # ---------------------------------------------------------------- probe
@@ -429,11 +440,12 @@ def load_snapshot_ids() -> list[int]:
 
 
 def check_constraints(positions: list[Position], cfg: dict, t0: str, snapshot_ids: set[int]) -> None:
-    main = [p for p in positions if not p.reserve]
+    main = [p for p in positions if is_main(p)]
     pilot = [p for p in main if p.pilot]
     checks = {
         "основных позиций": (len(main), cfg["n_positions"]),
-        "резервных позиций": (len(positions) - len(main), cfg["n_reserve"]),
+        # резерв считается вместе с уже использованными для замен позициями
+        "резервных позиций": (sum(p.reserve or p.replaces is not None for p in positions), cfg["n_reserve"]),
         "seed-позиций": (sum(p.origin == "seed" for p in main), sum(cfg["n_seed"].values())),
         "кандидатов в G⊥": (sum(p.role == "unanswerable_candidate" for p in main), cfg["n_unanswerable"]),
         "позиций пилота": (len(pilot), cfg["pilot"]["seed"] + cfg["pilot"]["new"]),
@@ -459,7 +471,8 @@ def check_constraints(positions: list[Position], cfg: dict, t0: str, snapshot_id
 
 
 def write_report(positions: list[Position], path: Path, meta: dict) -> None:
-    main = [p for p in positions if not p.reserve]
+    main = [p for p in positions if is_main(p)]
+    reserve_total = sum(p.reserve or p.replaces is not None for p in positions)
 
     def table(title: str, key) -> list[str]:
         cnt = Counter(key(p) for p in main)
@@ -475,7 +488,7 @@ def write_report(positions: list[Position], path: Path, meta: dict) -> None:
         f"SHA-256 списка идентификаторов `{meta['ids_sha256'][:16]}…` (`data/corpus_snapshot/meta.json`).",
         "",
         f"Основных позиций: {len(main)} (seed pool — {sum(p.origin == 'seed' for p in main)}, "
-        f"новых — {sum(p.origin == 'new' for p in main)}); резерв — {len(positions) - len(main)}; "
+        f"новых — {sum(p.origin == 'new' for p in main)}); резерв — {reserve_total}; "
         f"пилот — {sum(p.pilot for p in main)}. Охват: {len(months)} месяцев ({months[0]} — {months[-1]}), "
         f"{len({p.netloc for p in main})} доменов, {len({p.region for p in main})} регионов.",
         "",
@@ -491,7 +504,50 @@ def write_report(positions: list[Position], path: Path, meta: dict) -> None:
         ps = [p for p in pilot if p.region == region]
         lines.append(f"| {region} | {len(ps)} | {sum(p.role == 'dynamic_control' for p in ps)} | "
                      f"{sum(p.role == 'unanswerable_candidate' for p in ps)} |")
+    replaced = [p for p in positions if p.replaced_by]
+    if replaced:
+        lines += ["", "### Замены", "", "| Позиция | Заменена на | Причина |", "|---|---|---|"]
+        lines += [f"| {p.position_id} | {p.replaced_by} | {p.replace_reason or '—'} |" for p in replaced]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+# ---------------------------------------------------------------- replace
+
+def replace(positions_path: Path, position_id: str, reason: str, config: str) -> Position:
+    r"""Замена позиции ``position_id`` резервной из той же страты.
+
+    Кандидаты — неиспользованные резервные позиции с тем же доменом, происхождением и ролью; среди
+    них берётся ближайшая по месяцу публикации (при равенстве — меньший номер), при отсутствии —
+    тот же регион. Резервная получает ``reserve = false``, флаг пилота заменённой и ``replaces``;
+    заменённая — ``pilot = false``, ``replaced_by`` и причину. Ограничения отбора проверяются заново.
+    """
+    positions = [Position(**row) for row in read_jsonl(positions_path)]
+    by_id = {p.position_id: p for p in positions}
+    old = by_id.get(position_id)
+    if old is None or not is_main(old):
+        raise ValueError(f"{position_id}: нет такой позиции в основном наборе")
+
+    def month_gap(p: Position) -> int:
+        y1, m1 = map(int, old.published_at[:7].split("-"))
+        y2, m2 = map(int, p.published_at[:7].split("-"))
+        return abs((y1 - y2) * 12 + (m1 - m2))
+
+    free = [p for p in positions if p.reserve and p.origin == old.origin and p.role == old.role]
+    candidates = [p for p in free if p.netloc == old.netloc] or [p for p in free if p.region == old.region]
+    if not candidates:
+        raise ValueError(f"{position_id}: нет резервной позиции той же страты")
+    new = min(candidates, key=lambda p: (month_gap(p), p.position_id))
+    new.reserve, new.pilot, new.replaces = False, old.pilot, old.position_id
+    old.pilot, old.replaced_by, old.replace_reason = False, new.position_id, reason
+
+    cfg = load_config(REPO_ROOT / config)
+    meta = json.loads((SNAPSHOT_DIR / "meta.json").read_text(encoding="utf-8"))
+    check_constraints(positions, cfg, meta["t0"], set(load_snapshot_ids()))
+    with open(positions_path, "w", encoding="utf-8") as fh:
+        for p in positions:
+            fh.write(json.dumps(asdict(p), ensure_ascii=False) + "\n")
+    write_report(positions, SEED_POOL_DIR / "sampling_report.md", meta)
+    return new
 
 
 # ---------------------------------------------------------------- fetch
@@ -531,9 +587,11 @@ def fetch(positions_path: Path) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=["probe", "snapshot", "sample", "fetch"])
+    parser.add_argument("command", choices=["probe", "snapshot", "sample", "fetch", "replace"])
     parser.add_argument("--config", default="code/configs/sampling.yaml")
     parser.add_argument("--out", default="data/seed_pool/sampled_documents.jsonl")
+    parser.add_argument("--position", help="replace: идентификатор заменяемой позиции")
+    parser.add_argument("--reason", help="replace: причина замены (попадает в отчёт отбора)")
     return parser
 
 
@@ -554,6 +612,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"{out.relative_to(REPO_ROOT)}: {len(positions)} позиций; отчёт — data/seed_pool/sampling_report.md")
     elif args.command == "fetch":
         fetch(out)
+    elif args.command == "replace":
+        if not args.position or not args.reason:
+            raise SystemExit("replace: нужны --position и --reason")
+        new = replace(out, args.position, args.reason, args.config)
+        print(f"{args.position} → {new.position_id} ({new.netloc}, {new.published_at}); "
+              f"обновлены {out.relative_to(REPO_ROOT)} и data/seed_pool/sampling_report.md")
     return 0
 
 
