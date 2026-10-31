@@ -1,0 +1,33 @@
+# Перевод документов для разметки (ADR-025): модель машинного перевода на сервере ИВ РАН,
+# по абзацам с предыдущим абзацем как контекстом. В оцениваемые системы L модель не входит,
+# перевод — вспомогательный текст для аннотатора: в корпус и эталон он не попадает.
+
+model: Hy-MT2-30B-A3B-Q4_K_M     # фактическая модель берётся из поля model ответа (ADR-009)
+base_url: ${IVRAN_LLM_BASE_URL}
+api_key: ${IVRAN_LLM_API_KEY}
+prompt_id: hymt2-v1
+temperature: 0                   # авторы модели советуют 0.7; 0 — ради воспроизводимости (ADR-025, п. 2)
+max_tokens: 2048
+max_piece_chars: 1200            # абзац длиннее делится по границам предложений
+workers: 3                       # документы переводятся параллельно, абзацы документа — по порядку
+timeout: 600                     # первый запрос загружает модель на общем сервере (~1,5 мин)
+max_retries: 2
+
+paths:
+  positions: data/seed_pool/sampled_documents.jsonl
+  documents: data/_cache/documents
+  out: data/_cache/translations
+  report: data/golden_set/v0.1-pilot/translation_report.md
+
+# Шаблоны авторов модели (карточка tencent/Hy-MT2-30B-A3B): для пар с китайским — китайский
+# промпт и китайские названия языков, для остальных — английский. Системного промпта нет.
+prompts:
+  zh_ru: "将以下文本翻译为俄语，注意只需要输出翻译后的结果，不要额外解释：\n\n{source}"
+  zh_ru_ctx: "【背景信息】\n{context}\n\n请结合背景信息将以下文本翻译为俄语。\n\n【待翻译文本】\n{source}"
+  ru_zh: "将以下文本翻译为中文，注意只需要输出翻译后的结果，不要额外解释：\n\n{source}"
+  ru_en: "Translate the following text into English. Note that you should only output the translated result without any additional explanation:\n\n{source}"
+
+checks:
+  ratio_min: 1.2                 # длина перевода / длина оригинала в знаках
+  ratio_max: 6.0
+  ratio_min_len: 20              # короче — отношение длин не проверяется
