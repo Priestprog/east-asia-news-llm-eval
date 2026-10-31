@@ -16,23 +16,54 @@ r"""Метрики по эталону (определены на $G^+$).
 
 from __future__ import annotations
 
+import re
+from functools import lru_cache
 from typing import Sequence
 
 # Стоп-слова по леммам (docs/metrics.md, §3, шаг 8): предлоги, союзы, частицы; отрицательные
 # частицы «не», «ни» в список не входят. Список версионируется вместе с выборкой.
 STOPWORDS_RU: frozenset[str] = frozenset()
 
+# Внешние служебные слова: снимаются только в начале и в конце ответа
+_EDGE_WORDS = frozenset({"год", "года", "году", "г", "the", "a", "an"})
+_DECIMAL = re.compile(r"(?<=\d)[.,](?=\d)")
+_NON_WORD = re.compile(r"[^\w\s\u0001]", re.UNICODE)
+_CYRILLIC = re.compile(r"[а-я]")
+
 
 def normalize(text: str) -> str:
     r"""$\mathrm{norm}(\cdot)$: нижний регистр, ``ё → е``, удаление пунктуации и кавычек,
-    схлопывание пробелов, снятие внешних артиклей и служебных слов («год», «г.»)."""
-    raise NotImplementedError("реализация — часть работы")
+    схлопывание пробелов, снятие внешних артиклей и служебных слов («год», «г.»).
+
+    Десятичный разделитель внутри числа сохраняется и приводится к точке: «2,7» и «2.7» совпадают.
+    """
+    text = (text or "").lower().replace("ё", "е")
+    text = _DECIMAL.sub("\u0001", text)
+    text = _NON_WORD.sub(" ", text).replace("_", " ").replace("\u0001", ".")
+    tokens = text.split()
+    while tokens and tokens[0] in _EDGE_WORDS:
+        tokens.pop(0)
+    while tokens and tokens[-1] in _EDGE_WORDS:
+        tokens.pop()
+    return " ".join(tokens)
+
+
+@lru_cache(maxsize=1)
+def _morph():
+    import pymorphy3
+
+    return pymorphy3.MorphAnalyzer()
+
+
+@lru_cache(maxsize=65536)
+def _lemma(token: str) -> str:
+    return _morph().parse(token)[0].normal_form if _CYRILLIC.search(token) else token
 
 
 def lemmatize_tokens(text: str) -> list[str]:
     """Токены ``normalize(text)``, приведённые к леммам ``pymorphy3`` (для русского);
     латиница, цифры и китайские иероглифы остаются как есть."""
-    raise NotImplementedError("реализация — часть работы")
+    return [_lemma(t) for t in normalize(text).split()]
 
 
 def exact_match(answer: str | None, aliases: Sequence[str]) -> float | None:
