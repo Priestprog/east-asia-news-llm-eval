@@ -47,7 +47,7 @@ Systems in which a large language model answers questions about articles in a ne
 
 ## Формальная постановка задачи
 
-Полная версия с протоколом разметки и обсуждением решений — в [docs/problem_statement.md](docs/problem_statement.md); правила разметки — в [docs/annotation_guidelines.md](docs/annotation_guidelines.md); стандарт обозначений — [ADR-016](docs/decisions.md#adr-016-стандарт-обозначений-v2).
+Полная версия с протоколом разметки и обсуждением решений — в [docs/problem_statement.md](docs/problem_statement.md); правила разметки — в [docs/annotation_guidelines.md](docs/annotation_guidelines.md), протокол разметки — в [docs/annotation_protocol.md](docs/annotation_protocol.md); стандарт обозначений — [ADR-016](docs/decisions.md#adr-016-стандарт-обозначений-v2).
 
 ### Дано
 
@@ -112,7 +112,7 @@ Systems in which a large language model answers questions about articles in a ne
 
 ### Протокол разметки (кратко)
 
-Стратифицированный отбор документов из `webmedia.webpages ∩ Qdrant` (домен × месяц × категория) с переизбытком ×2; черновики $`(q,a,S,\mathrm{evidence},\text{тип},\text{дата})`$ порождает генератор $`g_{\mathrm{draft}}`$ на модели $`\ell_{\mathrm{draft}}\notin\mathcal{L}`$ (388 старых вопросов — seed pool после перекладки `warc_id → webpage_id`); независимая разметка $`R=3`$ аннотаторами (не менее одного, читающего по-китайски); согласие — $`\alpha`$ Криппендорфа по инвариантности, отвечаемости и типу ($`\alpha\ge0.67`$ допустимо, $`\alpha\ge0.8`$ надёжно) и попарный F1 по ответам $`\ge0.8`$; включение в $`G`$ при единогласии, иначе адъюдикация четвёртым экспертом; пилот на 30 вопросах → правка инструкции → полный прогон → заморозка `v1.0` (sha256, CHANGELOG). Правила $`E_1`$–$`E_5`$, шкалы и примеры — в [docs/annotation_guidelines.md](docs/annotation_guidelines.md).
+Стратифицированный отбор документов из `webmedia.webpages ∩ Qdrant` (домен × месяц × категория) с переизбытком ×2; черновики $`(q,a,S,\mathrm{evidence},\text{тип},\text{дата})`$ порождает генератор $`g_{\mathrm{draft}}`$ на модели $`\ell_{\mathrm{draft}}\notin\mathcal{L}`$ (388 старых вопросов — seed pool после перекладки `warc_id → webpage_id`); независимая разметка $`R=3`$ аннотаторами (не менее одного, читающего по-китайски); согласие — $`\alpha`$ Криппендорфа по инвариантности, отвечаемости и типу ($`\alpha\ge0.67`$ допустимо, $`\alpha\ge0.8`$ надёжно) и попарный F1 по ответам $`\ge0.8`$; включение в $`G`$ при единогласии, иначе адъюдикация четвёртым экспертом; пилот на 30 вопросах → правка инструкции → полный прогон → заморозка `v1.0` (sha256, CHANGELOG). Правила $`E_1`$–$`E_5`$ и примеры — в [docs/annotation_guidelines.md](docs/annotation_guidelines.md); роли, правило включения, шкалы 0–5 и меры согласия — в [docs/annotation_protocol.md](docs/annotation_protocol.md); адъюдикация — в [docs/adjudication_guidelines.md](docs/adjudication_guidelines.md).
 
 ### Гипотезы
 

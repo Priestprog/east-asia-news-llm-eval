@@ -57,7 +57,7 @@
     },
     "question_type": {
       "enum": ["who", "what", "when", "where", "how_many", "which", "yes_no", "list"],
-      "description": "Форма вопроса (см. docs/annotation_guidelines.md, раздел 9)."
+      "description": "Форма вопроса (см. docs/annotation_guidelines.md, раздел 5)."
     },
     "category": {
       "enum": [
@@ -98,7 +98,7 @@
     "time_invariance": { "$ref": "#/$defs/time_invariance" },
     "difficulty": {
       "enum": ["easy", "medium", "hard"],
-      "description": "Сложность по инструкции аннотатора, раздел 10."
+      "description": "Сложность по инструкции аннотатора, раздел 6."
     },
     "provenance": { "$ref": "#/$defs/provenance" }
   },
@@ -168,7 +168,7 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 300,
-          "description": "Каноническая формулировка ответа a*(q) (инструкция, раздел 7)."
+          "description": "Каноническая формулировка ответа a*(q) (инструкция аннотатора, раздел 3)."
         },
         "aliases": {
           "type": "array",

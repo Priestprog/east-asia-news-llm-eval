@@ -22,7 +22,8 @@ def find_disagreements(
     """Единицы без единогласия по ``fields`` или с попарным F1 ответов ниже порога.
 
     Единицы, у которых $z_r(q) = 0$ хотя бы у двух аннотаторов, сюда не входят: они исключаются
-    без адъюдикации (``docs/annotation_guidelines.md``, раздел 12).
+    без адъюдикации (``docs/annotation_protocol.md``, раздел 5; порядок работы эксперта —
+    ``docs/adjudication_guidelines.md``).
     """
     raise NotImplementedError("реализация — часть работы")
 

@@ -4,11 +4,11 @@ r"""Разметка пилота в Argilla: учётные записи, да�
 репозитория промышленной системы). Каждая запись получает ровно $R = 3$ независимых ответа
 (``TaskDistribution(min_submitted=3)``); аннотатор видит только свои ответы.
 
-Что видит аннотатор (инструкция, §3): черновик вопроса; карточку черновика (ответ, алиасы,
+Что видит аннотатор (протокол разметки, §3): черновик вопроса; карточку черновика (ответ, алиасы,
 evidence span, источник, дата публикации); документ — оригинал и перевод рядом, абзац к абзацу,
 с подсветкой evidence span; топ-20 ретривера — у всех записей, чтобы роли позиций не раскрывались.
 Подсказками из черновика предзаполнены дата-якорь, тип вопроса, категория, сложность, ответ,
-алиасы, тип ответа, evidence span и $S^*$ (инструкция, §3.6; решение 30.10). Инвариантность,
+алиасы, тип ответа, evidence span и $S^*$ (протокол разметки, §3, п. 6; решение 30.10). Инвариантность,
 правила исключения, отвечаемость и метка инвариантности не предзаполняются. Роль позиции, заметка
 координатора, проверки черновика и метки модели в Argilla не передаются.
 
@@ -20,7 +20,10 @@ evidence span, источник, дата публикации); докумен�
   ``data/_cache/upload_manifest.json``;
 * ``push`` — датасет и записи (существующий датасет — только с ``--upsert``); ``--preview FILE`` —
   только локальный HTML одной записи;
-* ``verify`` — сверка датасета на сервере с локальными записями: поля, вопросы, подсказки, инструкция;
+* ``update-settings`` — обновить у существующего датасета инструкцию, шаблоны полей, заголовки, подсказки ⓘ и
+  подписи меток при тех же ключах (записи и ответы не затрагиваются);
+* ``verify`` — сверка датасета на сервере с локальными записями и настройками: поля, шаблоны, вопросы,
+  подсказки, метки, инструкция;
 * ``delete`` — удаление тестовой копии (рабочий датасет и датасет с ответами не удаляются);
 * ``progress`` — ход разметки по аннотаторам;
 * ``pull`` — отправленные ответы в ``annotations.jsonl``: строки ``{"draft_id", "annotator",
@@ -233,124 +236,176 @@ FIELDS = [
 ]
 
 # Формулировки формы — без обозначений из постановки (z, Inv, G⊥): пояснения даны словами и
-# ссылками на разделы инструкции; памятка в начале инструкции повторяет правила E1–E5 кратко
+# ссылками на разделы инструкции аннотатора. Пункты формы в текстах для аннотатора называются «пунктами»,
+# а не «вопросами»: «вопрос» — это размечаемый вопрос. Описание (description) — markdown для памятки и полной
+# инструкции: строки «- …» становятся списком, остальные — абзацами
 QUESTIONS = [
-    {"kind": "label", "name": "z", "title": "1. Ответ на вопрос не меняется со временем? (раздел 5)", "required": True,
-     "description": "1 — да: ни одно правило исключения E1–E5 не сработало (правила — в вопросе 2 и в разделе 5).\n"
-                    "0 — нет, исключить: сработало хотя бы одно правило. Отметьте его в вопросе 2, напишите "
-                    "комментарий (вопрос 16); остальные поля не заполняйте.",
+    {"kind": "label", "name": "z", "title": "1. Ответ на вопрос не меняется со временем? (раздел 2)", "required": True,
+     "description": "- 1 — да: ни одно правило исключения E1–E5 не сработало (правила — в пункте 2 формы и в разделе 2 "
+                    "инструкции).\n"
+                    "- 0 — нет, исключить: сработало хотя бы одно правило. Отметьте его в пункте 2, напишите "
+                    "комментарий в пункте 16; остальные пункты не заполняйте.",
      "labels": {"1": "1 — да, оставить", "0": "0 — исключить"}},
-    {"kind": "multi", "name": "excl", "title": "2. Сработавшие правила исключения (если в вопросе 1 — «0»)",
-     "labels": {"E1": "E1 прогноз, гипотетика", "E2": "E2 «сейчас», «последний»",
+    {"kind": "multi", "name": "excl", "title": "2. Сработавшие правила исключения (только при «0» в пункте 1)",
+     "description": "Отмечается, только если в пункте 1 стоит «0», то есть сработало хотя бы одно из правил E1–E5, "
+                    "описанных в разделе 1 памятки (подробно — раздел 2 инструкции). Можно отметить несколько.",
+     "labels": {"E1": "E1 прогноз, суждение о будущем", "E2": "E2 «сейчас», «последний»",
                 "E3": "E3 величина без даты-якоря", "E4": "E4 оценочный, спорный", "E5": "E5 ложная предпосылка"}},
-    {"kind": "label", "name": "answerable", "title": "3. Есть ли ответ в корпусе? (раздел 6)",
-     "description": "1 — ответ следует из документа-источника или документов топ-20.\n"
-                    "0 — ответа в них нет; ставится только после просмотра топ-20.",
+    {"kind": "label", "name": "answerable", "title": "3. Есть ли ответ в корпусе? (раздел 4)",
+     "description": "- 1 — ответ следует из документа-источника или документов топ-20.\n"
+                    "- 0 — ответа в них нет; ставится только после просмотра топ-20.",
      "labels": {"1": "1 — ответ есть", "0": "0 — ответа нет"}},
-    {"kind": "label", "name": "ti_label", "title": "4. Тип неизменности ответа (раздел 6)",
-     "description": "never_changing — факт не меняется в принципе (кто, что, когда произошло).\n"
-                    "slow_changing_anchored — величина меняется, но зафиксирована датой (должность на дату, "
+    {"kind": "label", "name": "ti_label", "title": "4. Тип неизменности ответа (раздел 2)",
+     "description": "- **never_changing** — факт не меняется в принципе (кто, что, когда произошло).\n"
+                    "- **slow_changing_anchored** — величина меняется, но зафиксирована датой (должность на дату, "
                     "показатель за период).",
      "labels": _same(LABELS)},
     {"kind": "text", "name": "anchor_date", "title": "5. Дата-якорь события",
      "description": "Дата события из документа (не дата публикации) с той точностью, что есть в тексте. "
                     "Формат один для всех регионов, меняется только точность:\n"
-                    "2023 — год · 2023-05 — месяц · 2023-05-31 — день · 2023-Q2 — квартал · 2023-H1 — полугодие."},
-    {"kind": "label", "name": "question_type", "title": "6. Тип вопроса (раздел 9)",
-     "description": "who — лицо, организация, орган; what — объект, событие, название, содержание решения; "
-                    "when — дата, период; where — место, страна, регион; how_many — количество, сумма, доля, "
-                    "процент; which — выбор из явно заданного множества; yes_no — подтверждение факта; "
-                    "list — перечисление из 2–5 элементов.",
+                    "- **2023** — год\n- **2023-05** — месяц\n- **2023-05-31** — день\n- **2023-Q2** — квартал\n"
+                    "- **2023-H1** — полугодие"},
+    {"kind": "label", "name": "question_type", "title": "6. Тип вопроса (раздел 5)",
+     "description": "- **who** — лицо, организация, орган\n"
+                    "- **what** — объект, событие, название, содержание решения\n"
+                    "- **when** — дата, период\n"
+                    "- **where** — место, страна, регион\n"
+                    "- **how_many** — количество, сумма, доля, процент\n"
+                    "- **which** — выбор из явно заданного множества\n"
+                    "- **yes_no** — подтверждение факта\n"
+                    "- **list** — перечисление из 2–5 элементов",
      "labels": _same(QUESTION_TYPES)},
-    {"kind": "label", "name": "category", "title": "7. Категория (по факту, о котором вопрос)",
+    {"kind": "label", "name": "category", "title": "7. Категория (раздел 5)",
+     "description": "Тема того факта, о котором спрашивает вопрос; тема статьи в целом может быть другой. Пример: "
+                    "статья о визите премьер-министра КНР в Сингапур относится к международным отношениям, но вопрос "
+                    "о сумме подписанных при визите инвестиционных соглашений — economy.\n"
+                    "- **politics** — внутренняя политика, государственное управление, назначения, законы\n"
+                    "- **economy** — экономика, финансы, торговля, бюджет\n"
+                    "- **society** — общество, образование, социальная политика, происшествия\n"
+                    "- **international** — отношения между странами, визиты, международные организации\n"
+                    "- **security** — оборона, армия, правопорядок\n"
+                    "- **technology** — наука и технологии\n"
+                    "- **culture** — культура, искусство, спорт\n"
+                    "- **health** — здравоохранение, эпидемии\n"
+                    "- **environment** — экология, климат, стихийные бедствия\n"
+                    "- **other** — ничего из перечисленного",
      "labels": _same(CATEGORIES)},
-    {"kind": "label", "name": "difficulty", "title": "8. Сложность (раздел 10)",
-     "description": "easy — ответ в одном предложении, слова вопроса совпадают со словами документа.\n"
-                    "medium — нужно сопоставить 2–3 фрагмента, пересчитать единицы, разрешить местоимения; "
-                    "либо перевод искажает ключевой термин.\n"
-                    "hard — нужно несколько документов, или ответ есть только в оригинале, или вопрос "
+    {"kind": "label", "name": "difficulty", "title": "8. Сложность (раздел 6)",
+     "description": "- **easy** — ответ в одном предложении, слова вопроса совпадают со словами документа.\n"
+                    "- **medium** — нужно сопоставить 2–3 фрагмента, пересчитать единицы, понять, к кому относятся "
+                    "местоимения; либо перевод искажает ключевой термин.\n"
+                    "- **hard** — нужно несколько документов, или ответ есть только в оригинале, или вопрос "
                     "почти не пересекается с документом по словам.",
      "labels": _same(DIFFICULTIES)},
-    {"kind": "text", "name": "answer", "title": "9. Канонический ответ (раздел 7)",
+    {"kind": "text", "name": "answer", "title": "9. Канонический ответ (раздел 3)",
      "description": "Кратчайшая проверяемая формулировка; составной ответ — одной строкой через «;»."},
-    {"kind": "text", "name": "aliases", "title": "10. Алиасы — по одному на строку"},
-    {"kind": "label", "name": "answer_type", "title": "11. Тип ответа", "labels": _same(ANSWER_TYPES)},
-    {"kind": "text", "name": "evidence_ru", "title": "12. Evidence span — перевод (≤ 300 знаков)"},
+    {"kind": "text", "name": "aliases", "title": "10. Алиасы — по одному на строку (раздел 3)",
+     "description": "Написание в оригинале (иероглифами), латиницей, другие транслитерации, сокращения, другие "
+                    "форматы чисел и дат."},
+    {"kind": "label", "name": "answer_type", "title": "11. Тип ответа (раздел 3)",
+     "description": "short_text — только для вопросов о словах конкретного лица или органа; ответ не длиннее "
+                    "25 слов.",
+     "labels": _same(ANSWER_TYPES)},
+    {"kind": "text", "name": "evidence_ru", "title": "12. Evidence span — перевод (≤ 300 знаков)",
+     "description": "Фрагмент перевода, из которого следует ответ."},
     {"kind": "text", "name": "evidence_zh", "title": "13. Evidence span — оригинал (≤ 300 знаков)",
      "description": "Заполняет и сверяет читающий по-китайски."},
-    {"kind": "text", "name": "supporting_ids", "title": "14. S*: webpage_id документов, влекущих ответ",
+    {"kind": "text", "name": "supporting_ids", "title": "14. S*: webpage_id документов, из которых следует ответ (раздел 4)",
      "description": "По одному на строку; из документа-источника и топ-20."},
     {"kind": "label", "name": "multi_doc", "title": "15. Нужно больше одного документа?",
+     "description": "Да — если ответ нельзя получить из одного документа; тогда в пункт 14 вносятся все нужные "
+                    "документы.",
      "labels": {"no": "нет", "yes": "да"}},
     {"kind": "text", "name": "comment", "title": "16. Комментарий",
-     "description": "Обязателен, если вы исправили предзаполненное значение или исключили вопрос (0 в вопросе 1).\n"
+     "description": "Обязателен, если вы исправили предзаполненное значение или исключили вопрос («0» в пункте 1).\n"
                     "Сюда же — замечания к переводу и предложенная переформулировка вопроса."},
 ]
 
-# Короткие подсказки для значка ⓘ у вопроса: всплывающее окно Argilla узкое и не настраивается, поэтому
-# там 1–2 строки, а полные пояснения (description) — в памятке над записью и в полной инструкции
+# Короткие подсказки для значка ⓘ у пункта формы: всплывающее окно Argilla узкое и не настраивается, поэтому
+# там 1–2 строки (перенос строки сохраняется), а полные пояснения (description) — в памятке и в полной инструкции
 HINTS = {
-    "z": "1 — оставить; 0 — исключить (сработало правило E1–E5). Подробно — в памятке над записью.",
-    "excl": "Отмечается, только если в вопросе 1 — «0».",
-    "answerable": "0 — только после просмотра топ-20.",
-    "ti_label": "never_changing — факт; slow_changing_anchored — величина на дату.",
+    "z": "1 — оставить.\n0 — исключить: сработало правило E1–E5. Подробно — в «Памятке» (кнопка вверху).",
+    "excl": "Только если в пункте 1 стоит «0», то есть сработало правило E1–E5 (раздел 1 памятки).",
+    "answerable": "1 — ответ есть в документе или топ-20.\n0 — ответа нет; только после просмотра топ-20.",
+    "ti_label": "never_changing — факт.\nslow_changing_anchored — величина на дату.",
     "anchor_date": "Дата события: 2023 · 2023-05 · 2023-05-31 · 2023-Q2 · 2023-H1.",
-    "question_type": "who, what, when, where, how_many, which, yes_no, list — определения в памятке.",
-    "category": "По факту, о котором вопрос, а не по теме статьи.",
-    "difficulty": "easy / medium / hard — определения в памятке.",
+    "question_type": "who, what, when, where, how_many, which, yes_no, list — определения в «Памятке».",
+    "category": "Тема спрашиваемого факта; у статьи в целом тема может быть другой. Значения — в «Памятке».",
+    "difficulty": "easy / medium / hard — определения в «Памятке».",
     "answer": "Кратчайшая проверяемая формулировка; составной ответ — через «;».",
     "aliases": "Оригинал имени, латиница, другие форматы чисел и дат.",
     "evidence_ru": "Фрагмент перевода, из которого следует ответ.",
     "evidence_zh": "Фрагмент оригинала; сверяет читающий по-китайски.",
     "supporting_ids": "webpage_id по одному на строку.",
     "multi_doc": "Да — если ответ нельзя получить из одного документа.",
-    "comment": "Обязателен при любом исправлении и при исключении (0 в вопросе 1).",
+    "comment": "Обязателен при любом исправлении и при исключении («0» в пункте 1).",
 }
 HINT_MAX = 120
 
-# Работа в интерфейсе Argilla: массовый режим и Discard ломают распределение «ровно 3 ответа на запись»
-INTERFACE_NOTES = """**Работа в интерфейсе**
+# Работа в интерфейсе Argilla: массовый режим и Discard ломают распределение «ровно 3 ответа на запись»,
+# поэтому они вынесены в отдельный красный блок (> [!CAUTION])
+INTERFACE_NOTES = """## Работа в интерфейсе
 
-- Работайте по одной записи (значок ▢ вверху справа над записью). Режим списка (☰) не используйте: в нём ответ ставится сразу многим записям.
-- **Submit** — отправить ответ, запись уходит из списка Pending. **Save as draft** — сохранить, не отправляя.
-- **Discard** не используйте: неподходящий вопрос исключается ответом «0» в вопросе 1 с комментарием.
-- Значок ⓘ у вопроса — краткая подсказка; полные пояснения — ниже, в разделе «Пояснения к вопросам формы».
+- Работайте по одной записи: значок ▢ вверху справа над записью.
+- **Submit** — отправить ответ, запись уходит из списка Pending.
+- **Save as draft** — сохранить, не отправляя.
+- Значок ⓘ у пункта формы — краткая подсказка; полные пояснения — ниже, в разделе «Пояснения к пунктам формы».
 - Работайте сессиями не длиннее 2 часов, не больше двух сессий в день: отправленные ответы и черновики (Save as draft) сохраняются, можно продолжить позже.
+
+> [!CAUTION]
+> **Не используйте**
+> - **Режим списка (☰)** — в нём ответ ставится сразу многим записям.
+> - **Discard** — неподходящий вопрос исключается ответом «0» в пункте 1 формы с комментарием.
 """
 
-# Памятка в начале инструкции на панели Argilla; правила — как в разделе 5 инструкции
+# Памятка: в шапке Argilla (кнопка «Памятка»), в начале полной инструкции и панели Guidelines; правила — как в
+# разделе 2 инструкции. Блок > [!IMPORTANT] выводится крупным жирным шрифтом
 GUIDELINES_MEMO = """# Памятка аннотатора
 
-Для каждого элемента — по порядку формы справа.
+> [!IMPORTANT]
+> **Предзаполненные значения подготовлены автоматически и могут быть неверными: за итоговую запись отвечает аннотатор.**
 
-**1. Не меняется ли ответ со временем.** Вопрос исключается (0 в вопросе 1), если срабатывает хотя бы одно правило:
+Заполняйте форму справа по порядку пунктов.
 
-- **E1** — прогноз, гипотетика, суждение о будущем («насколько эффективными окажутся меры», «приведёт ли к росту»). Атрибутированное высказывание с датой допустимо.
+## 1. Как меняется ответ со временем
+
+Вопрос исключается, если срабатывает хотя бы одно правило:
+
+- **E1** — прогноз, суждение о будущем («насколько эффективными окажутся меры», «приведёт ли к росту или к спаду»). Допустим вопрос о том, что конкретное лицо или орган сказали в известную дату: это факт, а не прогноз.
 - **E2** — привязка к моменту запроса: «сейчас», «в настоящее время», «последний», «недавно», «в этом году», «за последние N лет».
 - **E3** — меняющаяся величина (цена, курс, индекс, численность, действующая должность) без явной даты или периода.
-- **E4** — оценочный или спорный вопрос («кто прав», «законно ли», «насколько успешной была»), если ответ не сводится к высказыванию конкретного лица или органа с датой.
-- **E5** — ложная предпосылка: документ не подтверждает факт, на котором построен вопрос (неверное имя, дата, сумма, событие).
+- **E4** — оценочный или спорный вопрос («кто прав», «законно ли», «насколько успешной была»), если ответ нельзя свести к словам конкретного лица или органа, сказанным в известную дату. Пример разметки — в разделе 2 инструкции.
+- **E5** — ложная предпосылка: вопрос содержит сведения, которые противоречат документу (неверное имя, дата, сумма, событие), или опирается на то, о чём в документе не говорится.
 
-При исключении отметьте сработавшие правила (вопрос 2) и напишите комментарий; остальные поля не заполняйте.
+Если вопрос исключается: в пункте 1 формы поставьте «0», в пункте 2 отметьте сработавшие правила, в пункте 16 напишите комментарий. Остальные пункты не заполняйте.
 
-**2. Есть ли ответ в корпусе** (вопрос 3): 1 — ответ следует из документа-источника или документов топ-20; 0 — только после просмотра топ-20, если ответа нет.
+## 2. Есть ли ответ в корпусе (пункт 3 формы)
 
-**3. Предзаполненные поля** (дата-якорь, тип вопроса, категория, сложность, ответ, алиасы, evidence, S*) — проверить и при необходимости исправить. Комментарий обязателен при любом исправлении.
+- 1 — ответ следует из документа-источника или документов топ-20.
+- 0 — ответа нет; ставится только после просмотра топ-20.
 
-**Оригинал главнее перевода.** Перевод вспомогательный; читающий по-китайски сверяет с оригиналом числа, даты и имена в ответе.
+## 3. Предзаполненные пункты
 
-**Предзаполненные значения подготовлены автоматически** и могут быть неверными: за итоговую запись отвечает аннотатор.
+Дата-якорь, тип вопроса, категория, сложность, ответ, алиасы, evidence span и S* проверьте и при необходимости исправьте. Комментарий обязателен при любом исправлении.
+
+## 4. Оригинал главнее перевода
+
+Перевод вспомогательный; читающий по-китайски сверяет с оригиналом числа, даты и имена в ответе.
 
 """
 
-MEMO_TAIL = ("Ниже — разделы инструкции, нужные при разметке: правила исключения с примерами (5), ответ и алиасы (7), "
-             "проверка S* (8), тип вопроса и категория (9).\n\n---\n\n")
+MEMO_TAIL = "Ниже — разделы 2 и 3 инструкции: правила исключения с примерами, канонический ответ и алиасы.\n\n---\n\n"
 
-# Argilla принимает инструкцию не длиннее 10 000 знаков: на панель идут памятка и разделы, нужные при
-# разметке. Разделы о целях, ролях, согласии, адъюдикации и составе пилота (16) аннотатору не показываются:
-# состав пилота не сообщается (раздел 16)
-ARGILLA_SECTIONS = ("5", "7", "8", "9")
+# Argilla принимает инструкцию не длиннее 10 000 знаков: на панель Guidelines (запасной вариант — основная
+# инструкция открывается кнопками в шапке) идут памятка и разделы, которые нужны у каждой записи: правила
+# исключения и ответ с алиасами. Разделы 4 и 5 на панель уже не помещаются — они в «Полной инструкции»
+ARGILLA_SECTIONS = ("2", "3")
 GUIDELINES_LIMIT = 10_000
+
+# Тексты для аннотаторов не должны раскрывать устройство репозитория и методики (замечания к инструкции,
+# 01.11): пути, ссылки на ADR, формулы в разметке GitHub, обозначения постановки
+FORBIDDEN_IN_ANNOTATOR_TEXT = ("docs/", "data/", "code/", ".md", ".json", "ADR-", "$`", "\\math", "⊥", "G+",
+                               "problem_statement", "кандидат")
 
 # Формулы инструкции (разметка GitHub $`…`$) Argilla не отрисовывает — переводятся в текст
 _TEX_SYMBOLS = {
@@ -378,63 +433,87 @@ def tex_to_text(expr: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+def _plain_alerts(markdown: str) -> str:
+    """Блоки ``> [!IMPORTANT]`` и ``> [!CAUTION]`` — в обычную цитату: панель Argilla их не отрисовывает и
+    показала бы метку текстом."""
+    return re.sub(r"(?m)^> \[!(?:IMPORTANT|CAUTION|NOTE|WARNING|TIP)\]\n", "", markdown)
+
+
+def _formulas_to_text(markdown: str) -> str:
+    text = re.sub(r"\$`([^`]+)`\$", lambda m: tex_to_text(m.group(1)), markdown)
+    return re.sub(r"```math\n(.*?)\n```", lambda m: tex_to_text(m.group(1)), text, flags=re.S)
+
+
+def _sections(text: str) -> dict[str, str]:
+    """Разделы инструкции «## N. …» по номеру (подразделы «### …» входят в раздел)."""
+    return {m.group(1): m.group(0) for m in re.finditer(r"(?ms)^## (\d+)\..*?(?=^## \d+\.|\Z)", text)}
+
+
 def guidelines_for_annotators(markdown: str) -> str:
     """Инструкция для панели Argilla: памятка и разделы ``ARGILLA_SECTIONS`` с формулами, переведёнными
     в текст; длиннее ``GUIDELINES_LIMIT`` — ошибка (сервер такую инструкцию не примет)."""
-    text = re.sub(r"\$`([^`]+)`\$", lambda m: tex_to_text(m.group(1)), markdown)
-    text = re.sub(r"```math\n(.*?)\n```", lambda m: tex_to_text(m.group(1)), text, flags=re.S)
-    sections = {m.group(1): m.group(0) for m in re.finditer(r"(?ms)^## (\d+)\..*?(?=^## \d+\.|\Z)", text)}
+    sections = _sections(_formulas_to_text(markdown))
     missing = [n for n in ARGILLA_SECTIONS if n not in sections]
     if missing:
         raise ValueError(f"в инструкции нет разделов {missing}")
     out = GUIDELINES_MEMO + MEMO_TAIL + "".join(sections[n].rstrip() + "\n\n" for n in ARGILLA_SECTIONS)
-    out += "Полный текст инструкции (цель разметки, роли, порядок адъюдикации) — у координатора."
+    out += "Остальные разделы — по кнопке «Полная инструкция» вверху страницы."
+    out = _plain_alerts(out)
     if len(out) > GUIDELINES_LIMIT:
         raise ValueError(f"инструкция для Argilla — {len(out)} знаков, предел {GUIDELINES_LIMIT}")
     return out
 
 
-# Полная инструкция в отдельной вкладке: все разделы, кроме 11 (оценка ответов систем — другой этап),
-# 15 (нормативы времени для координатора: аннотатора они подгоняют; из раздела в памятке осталось только
-# ограничение длины сессий) и 16 (состав пилота аннотаторам не сообщается)
-FULL_EXCLUDED_SECTIONS = ("11", "15", "16")
-
 DOC_CSS = """
 :root { --fg: #1f2328; --muted: #57606a; --line: #d0d7de; --head: #f6f8fa; --bg: #ffffff; --code: #eff1f3;
-        --link: #0969da; }
+        --link: #0969da; --red: #cf222e; --red-bg: #ffebe9; --red-line: #ff8182; --imp-bg: #ddf4ff; }
 html[data-theme="dark"], html[data-theme="high-contrast"] {
         --fg: #e6edf3; --muted: #9198a1; --line: #3d444d; --head: #151b23; --bg: #0d1117; --code: #262c36;
-        --link: #4493f8; }
+        --link: #4493f8; --red: #ff7b72; --red-bg: rgba(248,81,73,.12); --red-line: #f85149;
+        --imp-bg: rgba(56,139,253,.12); }
 body { color: var(--fg); font-family: -apple-system, "Segoe UI", Roboto, "PingFang SC", sans-serif; line-height: 1.55; }
-h1 { font-size: 20px; margin: 4px 0 10px; } h2 { font-size: 16px; margin: 16px 0 6px; }
-h3, h4 { font-size: 14px; margin: 12px 0 4px; }
-p { margin: 5px 0; } ul { margin: 4px 0 4px 20px; padding: 0; } li { margin: 2px 0; }
+h1 { font-size: 1.3em; margin: 4px 0 10px; } h2 { font-size: 1.15em; margin: 28px 0 8px; }
+h3, h4 { font-size: 1em; margin: 18px 0 4px; }
+p { margin: 5px 0; } ul, ol { margin: 4px 0 4px 20px; padding: 0; } li { margin: 3px 0; }
 code { background: var(--code); border-radius: 4px; padding: 0 4px; font-size: 92%; }
 table { border-collapse: collapse; margin: 6px 0; width: 100%; font-size: 13px; }
 th, td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
 th { background: var(--head); }
 a { color: var(--link); }
-hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+blockquote { margin: 10px 0; padding: 4px 12px; border-left: 4px solid var(--line); }
+.important { margin: 10px 0 18px; padding: 10px 14px; border-left: 4px solid var(--link); border-radius: 0 6px 6px 0;
+             background: var(--imp-bg); font-size: 17px; line-height: 1.45; }
+.important b { font-weight: 700; }
+.caution { margin: 14px 0; padding: 8px 14px; border-left: 4px solid var(--red-line); border-radius: 0 6px 6px 0;
+           background: var(--red-bg); color: var(--red); }
+.caution b, .caution li, .caution p { color: var(--red); }
 """
 
 
 def _questions_markdown() -> str:
-    """Пояснения к вопросам формы из ``QUESTIONS`` (полные тексты описаний)."""
-    lines = ["**Пояснения к вопросам формы**", ""]
+    """Пояснения к пунктам формы из ``QUESTIONS``: заголовок пункта отдельной строкой, под ним описание
+    (абзацы и списки) или краткая подсказка."""
+    lines = ["## Пояснения к пунктам формы", ""]
     for q in QUESTIONS:
         desc = q.get("description") or HINTS.get(q["name"], "")
-        lines.append(f"- **{q['title']}**" + (f" — {desc.replace(chr(10), ' ')}" if desc else ""))
+        lines += [f"### {q['title']}", ""] + ([desc, ""] if desc else [])
     return "\n".join(lines) + "\n"
 
 
+def annotator_texts(markdown: str) -> str:
+    """Все тексты, которые видит аннотатор (памятка, интерфейс, форма, инструкция), — для проверок."""
+    return "\n".join([GUIDELINES_MEMO, INTERFACE_NOTES, _questions_markdown(), _formulas_to_text(markdown)]
+                     + [q["title"] + " " + " ".join(map(str, q.get("labels", {}).values())) for q in QUESTIONS]
+                     + list(HINTS.values()))
+
+
 def full_guidelines_page(markdown: str) -> str:
-    """Полная инструкция для отдельной вкладки: памятка, работа в интерфейсе, пояснения к вопросам и
-    разделы инструкции (кроме ``FULL_EXCLUDED_SECTIONS``) с формулами, переведёнными в текст."""
-    text = re.sub(r"\$`([^`]+)`\$", lambda m: tex_to_text(m.group(1)), markdown)
-    text = re.sub(r"```math\n(.*?)\n```", lambda m: tex_to_text(m.group(1)), text, flags=re.S)
-    head = text.split("\n## ", 1)[0]                       # заголовок и вводный абзац инструкции
-    sections = [m.group(0) for m in re.finditer(r"(?ms)^## (\d+)\..*?(?=^## \d+\.|\Z)", text)
-                if m.group(1) not in FULL_EXCLUDED_SECTIONS]
+    """Полная инструкция для отдельной вкладки: памятка, работа в интерфейсе, пояснения к пунктам формы и
+    все разделы инструкции с формулами, переведёнными в текст."""
+    text = _formulas_to_text(markdown)
+    head = text.split("\n## ", 1)[0]                       # заголовок и строка версии
+    sections = list(_sections(text).values())
     body = (GUIDELINES_MEMO + "\n" + INTERFACE_NOTES + "\n" + _questions_markdown() + "\n---\n\n"
             + head + "\n\n" + "\n".join(sections))
     return (f"<!doctype html><html><head><meta charset='utf-8'><title>Инструкция аннотатора</title>"
@@ -479,14 +558,32 @@ html[data-theme="dark"] #ann-memo .ann-full-btn, html[data-theme="high-contrast"
 html[data-theme="dark"] #ann-memo .ann-panel, html[data-theme="high-contrast"] #ann-memo .ann-panel {
   border-color: #3d444d; background: #1c1c1c; color: #e6edf3; }
 #ann-memo .ann-close { font-size: 12px; opacity: .7; margin-bottom: 4px; }
-#ann-memo .ann-panel h1 { font-size: 18px; margin: 4px 0 8px; } #ann-memo .ann-panel h2 { font-size: 15px; margin: 12px 0 4px; }
-#ann-memo .ann-panel p { margin: 5px 0; } #ann-memo .ann-panel ul { margin: 4px 0 4px 20px; padding: 0; list-style: disc; }
-#ann-memo .ann-panel li { margin: 2px 0; display: list-item; }
+#ann-memo .ann-panel h1 { font-size: 18px; margin: 4px 0 8px; } #ann-memo .ann-panel h2 { font-size: 15px; margin: 26px 0 6px; }
+#ann-memo .ann-panel h3 { font-size: 14px; margin: 18px 0 4px; }
+#ann-memo .ann-panel p { margin: 5px 0; }
+#ann-memo .ann-panel ul { margin: 4px 0 4px 20px; padding: 0; list-style: disc; }
+#ann-memo .ann-panel ol { margin: 4px 0 4px 20px; padding: 0; list-style: decimal; }
+#ann-memo .ann-panel li { margin: 3px 0; display: list-item; }
 #ann-memo .ann-panel b { font-weight: 600; }
 #ann-memo .ann-panel code { background: rgba(127,127,127,.18); border-radius: 4px; padding: 0 4px; }
-#ann-memo .ann-panel hr { border: 0; border-top: 1px solid rgba(127,127,127,.35); margin: 10px 0; }
+#ann-memo .ann-panel hr { border: 0; border-top: 1px solid rgba(127,127,127,.35); margin: 18px 0; }
+#ann-memo .ann-panel blockquote { margin: 10px 0; padding: 4px 12px; border-left: 4px solid rgba(127,127,127,.45); }
+#ann-memo .ann-panel .important { margin: 6px 0 16px; padding: 10px 14px; border-left: 4px solid #0969da;
+  border-radius: 0 6px 6px 0; background: #ddf4ff; font-size: 17px; line-height: 1.45; }
+#ann-memo .ann-panel .important b { font-weight: 700; }
+#ann-memo .ann-panel .caution { margin: 14px 0; padding: 8px 14px; border-left: 4px solid #ff8182; border-radius: 0 6px 6px 0;
+  background: #ffebe9; color: #cf222e; }
+#ann-memo .ann-panel .caution b, #ann-memo .ann-panel .caution li, #ann-memo .ann-panel .caution p { color: #cf222e; }
+html[data-theme="dark"] #ann-memo .ann-panel .important, html[data-theme="high-contrast"] #ann-memo .ann-panel .important {
+  border-color: #388bfd; background: rgba(56,139,253,.14); }
+html[data-theme="dark"] #ann-memo .ann-panel .caution, html[data-theme="high-contrast"] #ann-memo .ann-panel .caution {
+  border-color: #f85149; background: rgba(248,81,73,.12); color: #ff7b72; }
+html[data-theme="dark"] #ann-memo .ann-panel .caution b, html[data-theme="dark"] #ann-memo .ann-panel .caution li,
+html[data-theme="dark"] #ann-memo .ann-panel .caution p, html[data-theme="high-contrast"] #ann-memo .ann-panel .caution b,
+html[data-theme="high-contrast"] #ann-memo .ann-panel .caution li,
+html[data-theme="high-contrast"] #ann-memo .ann-panel .caution p { color: #ff7b72; }
 """
-BAR_VERSION = "3"         # меняется при правке панели: открытая страница заменит старые кнопки и стили
+BAR_VERSION = "4"         # меняется при правке панели: открытая страница заменит старые кнопки и стили
 
 
 def memo_template(markdown: str) -> str:
@@ -505,7 +602,7 @@ def memo_template(markdown: str) -> str:
     bar_css = json.dumps(BAR_CSS, ensure_ascii=False).replace("</", "<\\/")
     return ("<!doctype html><html><head><meta charset='utf-8'><style>" + THEME_CSS + DOC_CSS + MEMO_CSS
             + "</style></head><body><div id='root'><div class='bar'>"
-            "<button id='toggle' type='button'>▸ Памятка: правила E1–E5, порядок заполнения, пояснения к вопросам</button>"
+            "<button id='toggle' type='button'>▸ Памятка: правила E1–E5, порядок заполнения, пояснения к пунктам формы</button>"
             "<button id='full' type='button'>Полная инструкция ↗</button></div>"
             f"<div id='body' hidden>{core_html}</div></div><script>"
             f"const PAGE = {page}; const BAR = {bar}; const BAR_CSS = {bar_css}; const BAR_V = '{BAR_VERSION}';"
@@ -756,8 +853,13 @@ def _preview_form(suggestions: dict[str, object]) -> str:
     return "".join(out) + legend + script
 
 
+_ALERT_CLASSES = {"IMPORTANT": "important", "CAUTION": "caution", "WARNING": "caution"}
+_ORDERED_ITEM = re.compile(r"^(\d+)\.\s+(.*)$")
+
+
 def _guidelines_html(markdown: str) -> str:
-    """Markdown инструкции → HTML: заголовки, абзацы, маркированные списки, таблицы, разделители."""
+    """Markdown инструкции → HTML: заголовки, абзацы, маркированные и нумерованные списки, таблицы,
+    разделители, цитаты; цитата ``> [!IMPORTANT]`` — блок крупным жирным шрифтом, ``> [!CAUTION]`` — красный."""
     out: list[str] = []
     lines = markdown.splitlines()
     i = 0
@@ -765,6 +867,22 @@ def _guidelines_html(markdown: str) -> str:
         s = lines[i].strip()
         if not s:
             i += 1
+        elif s.startswith(">"):
+            quoted = []
+            while i < len(lines) and lines[i].strip().startswith(">"):
+                quoted.append(re.sub(r"^>\s?", "", lines[i].strip()))
+                i += 1
+            alert = re.fullmatch(r"\[!(\w+)\]", quoted[0].strip()) if quoted else None
+            cls = _ALERT_CLASSES.get(alert.group(1).upper(), "") if alert else ""
+            inner = _guidelines_html("\n".join(quoted[1:] if alert else quoted))
+            out.append(f"<div class='{cls}'>{inner}</div>" if cls else f"<blockquote>{inner}</blockquote>")
+        elif _ORDERED_ITEM.match(s):
+            items = []
+            start = int(_ORDERED_ITEM.match(s).group(1))
+            while i < len(lines) and _ORDERED_ITEM.match(lines[i].strip()):
+                items.append(f"<li>{_markdown_inline(_ORDERED_ITEM.match(lines[i].strip()).group(2))}</li>")
+                i += 1
+            out.append(f"<ol start='{start}'>" + "".join(items) + "</ol>")
         elif s == "---":
             out.append("<hr>")
             i += 1
@@ -968,6 +1086,69 @@ def progress(cfg: dict) -> dict:
     return get_dataset(cfg, client(cfg)).progress(with_users_distribution=True)
 
 
+def _options(q) -> list[dict] | None:
+    """Метки вопроса как на сервере: [{"value", "text"}]; у текстовых вопросов — ``None``."""
+    opts = getattr(getattr(q._model, "settings", None), "options", None)
+    return [{"value": o["value"], "text": o.get("text")} for o in opts] if opts else None
+
+
+def settings_problems(current, wanted) -> list[str]:
+    """Расхождения настроек датасета на сервере с локальными: инструкция, состав и заголовки полей, шаблоны
+    полей, заголовки, подсказки ⓘ, метки и обязательность вопросов."""
+    problems = []
+    if (current.guidelines or "").rstrip() != (wanted.guidelines or "").rstrip():  # сервер срезает концевые пробелы
+        problems.append("инструкция на сервере отличается от локальной")
+    if [f.name for f in current.fields] != [f.name for f in wanted.fields]:
+        return problems + [f"поля: {[f.name for f in current.fields]}"]
+    if [q.name for q in current.questions] != [q.name for q in wanted.questions]:
+        return problems + [f"вопросы: {[q.name for q in current.questions]}"]
+    for cur, want in zip(current.fields, wanted.fields):
+        if cur.title != want.title:
+            problems.append(f"поле {want.name}: заголовок")
+        if getattr(want, "template", None) is not None and cur.template != want.template:
+            problems.append(f"поле {want.name}: шаблон")
+    for cur, want in zip(current.questions, wanted.questions):
+        for attr in ("title", "description", "required"):
+            if getattr(cur, attr) != getattr(want, attr):
+                problems.append(f"вопрос {want.name}: {attr}")
+        if _options(cur) != _options(want):
+            problems.append(f"вопрос {want.name}: метки")
+    return problems
+
+
+def update_settings(cfg: dict) -> str:
+    """Обновление настроек существующего датасета без пересоздания: инструкция, шаблоны и заголовки полей,
+    заголовки, подсказки и подписи меток вопросов. Ключи полей, вопросов и меток должны совпадать с
+    локальными (иначе ответы аннотаторов разошлись бы со схемой) — при расхождении ничего не меняется.
+    Записи, подсказки из черновиков и ответы не затрагиваются."""
+    a, c = cfg["argilla"], client(cfg)
+    ds = get_dataset(cfg, c)
+    wanted = build_settings(annotator_guidelines(cfg), a["min_submitted"], annotator_memo(cfg))
+    s = ds.settings
+    keys = lambda st: ([f.name for f in st.fields], [q.name for q in st.questions],
+                       [[o["value"] for o in (_options(q) or [])] for q in st.questions])
+    if keys(s) != keys(wanted):
+        raise RuntimeError("ключи полей, вопросов или меток на сервере не совпадают с локальными: "
+                           "обновление настроек отменено (нужен новый датасет)")
+    before = settings_problems(s, wanted)
+    if not before:
+        return f"{a['dataset']} ({a['workspace']}): настройки уже совпадают с локальными"
+    s.guidelines = wanted.guidelines
+    for cur, want in zip(s.fields, wanted.fields):
+        cur.title = want.title
+        if getattr(want, "template", None) is not None:
+            cur.template = want.template
+    for cur, want in zip(s.questions, wanted.questions):
+        cur.title, cur.description = want.title, want.description
+        if _options(want) is not None:
+            cur._model.settings.options = want._model.settings.options     # подписи меток при тех же ключах
+    ds.update()
+    after = settings_problems(get_dataset(cfg, client(cfg)).settings, wanted)
+    head = f"{a['dataset']} ({a['workspace']}): обновлено расхождений {len(before)}"
+    return head + ("; сверка после обновления пройдена" if not after
+                   else "; после обновления остались расхождения:\n  " + "\n  ".join(after))
+
+
 # ---------------------------------------------------------------- проверки до и после загрузки
 
 def _norm(value):
@@ -1006,20 +1187,16 @@ def preflight_problems(cfg: dict, payloads: list[dict]) -> list[str]:
     if "черновик" in ui_text.lower():
         problems.append("в заголовках или описаниях формы упоминается черновик")
     try:
-        guidelines = annotator_guidelines(cfg)
+        annotator_guidelines(cfg)
     except ValueError as exc:
         problems.append(f"инструкция: {exc}")
-    else:
-        if re.search(r"(?m)^## 16\.", guidelines):
-            problems.append("в инструкции для аннотаторов раздел 16 (состав пилота)")
-    # памятка и полная инструкция во вкладке: без раздела 16, все формулы переведены в текст
-    page = full_guidelines_page((REPO_ROOT / cfg["paths"]["guidelines"]).read_text(encoding="utf-8"))
+    # памятка, форма и инструкция: без путей репозитория, ссылок на ADR, формул и обозначений постановки
     guide_md = (REPO_ROOT / cfg["paths"]["guidelines"]).read_text(encoding="utf-8")
-    for number, title in re.findall(r"(?m)^## (\d+)\. (.+)$", guide_md):
-        if number in FULL_EXCLUDED_SECTIONS and f"{number}. {tex_to_text(title)}" in page:
-            problems.append(f"в полной инструкции для аннотаторов раздел {number}")
-    if "состав не сообщается" in page:
-        problems.append("в полной инструкции для аннотаторов описан состав пилота")
+    texts = annotator_texts(guide_md)
+    leaked = [s for s in FORBIDDEN_IN_ANNOTATOR_TEXT if s in texts]
+    if leaked:
+        problems.append(f"в текстах для аннотаторов недопустимые фрагменты: {leaked}")
+    page = full_guidelines_page(guide_md)
     if "$`" in page or "\\mathrm" in page:
         problems.append("в полной инструкции остались формулы в разметке GitHub")
     long_hints = [n for n, h in HINTS.items() if len(h) > HINT_MAX]
@@ -1102,18 +1279,10 @@ def verify(cfg: dict, allow_responses: bool = False) -> str:
     a, c = cfg["argilla"], client(cfg)
     ds = get_dataset(cfg, c)
     payloads = {p["id"]: p for p in build_payloads(cfg)}
-    problems = []
     s = ds.settings
-    if [f.name for f in s.fields] != [f["name"] for f in FIELDS]:
-        problems.append(f"поля: {[f.name for f in s.fields]}")
-    if [q.name for q in s.questions] != [q["name"] for q in QUESTIONS]:
-        problems.append(f"вопросы: {[q.name for q in s.questions]}")
-    if [q.name for q in s.questions if q.required] != [q["name"] for q in QUESTIONS if q.get("required")]:
-        problems.append("обязательные вопросы не совпадают")
+    problems = settings_problems(s, build_settings(annotator_guidelines(cfg), a["min_submitted"], annotator_memo(cfg)))
     if s.distribution.min_submitted != a["min_submitted"]:
         problems.append(f"min_submitted = {s.distribution.min_submitted}")
-    if (s.guidelines or "").rstrip() != annotator_guidelines(cfg).rstrip():     # сервер срезает концевые пробелы
-        problems.append("инструкция на сервере отличается от локальной")
     seen, n_resp = set(), 0
     for rec in ds.records(with_suggestions=True, with_responses=True):
         seen.add(rec.id)
@@ -1192,7 +1361,7 @@ def normalize_response(values: dict) -> dict:
 
 
 def validate_annotation(a: dict) -> list[str]:
-    """Нарушения порядка разметки (инструкция, §4): сообщаются, строки не отбрасываются."""
+    """Нарушения порядка разметки (инструкция аннотатора, §1): сообщаются, строки не отбрасываются."""
     problems = []
     if a["time_invariant"] == 0 and not a["exclusion_rules"] and not a["comment"]:
         problems.append("z = 0 без правила и комментария")
@@ -1253,7 +1422,8 @@ def pull(cfg: dict) -> str:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=["setup", "preflight", "push", "verify", "progress", "pull", "delete"])
+    parser.add_argument("command", choices=["setup", "preflight", "push", "update-settings", "verify", "progress",
+                                            "pull", "delete"])
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--workspace", default=None, help="рабочее пространство (по умолчанию из конфигурации)")
     parser.add_argument("--dataset", default=None, help="датасет (по умолчанию из конфигурации)")
@@ -1280,6 +1450,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     elif args.command == "push":
         preview = (REPO_ROOT / args.preview) if args.preview and not args.preview.is_absolute() else args.preview
         print(push(cfg, preview, args.record, upsert=args.upsert))
+    elif args.command == "update-settings":
+        print(update_settings(cfg))
     elif args.command == "verify":
         print(verify(cfg, allow_responses=args.allow_responses))
     elif args.command == "progress":

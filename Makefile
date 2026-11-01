@@ -16,7 +16,7 @@ GS_VERSION   ?= v1.0
 # Идентификатор прогона: дата-время и имя конфигурации системы (например 20270115-093000-prod).
 RUN_ID       ?= $(shell date +%Y%m%d-%H%M%S)-$(notdir $(basename $(SYSTEM)))
 
-.PHONY: help audit seed-remap snapshot sample drafts pilot-drafts translate topk annotation-setup annotation-push annotation-progress annotation-pull agreement build-gs run judge validate stats tables check
+.PHONY: help audit seed-remap snapshot sample drafts pilot-drafts translate topk annotation-setup annotation-push annotation-update-settings annotation-progress annotation-pull agreement build-gs run judge validate stats tables check
 
 help: ## список целей
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -57,6 +57,9 @@ annotation-setup: ## Argilla: рабочие пространства и учё�
 
 annotation-push: ## Argilla: датасет пилота (3 ответа на запись) и записи; предпросмотр — PREVIEW=путь.html
 	$(PYTHON) -m code.annotation.argilla_tasks push $(if $(PREVIEW),--preview $(PREVIEW))
+
+annotation-update-settings: ## Argilla: обновить инструкцию, памятку и тексты формы у существующего датасета (записи и ответы не меняются)
+	$(PYTHON) -m code.annotation.argilla_tasks update-settings
 
 annotation-progress: ## Argilla: ход разметки по аннотаторам
 	$(PYTHON) -m code.annotation.argilla_tasks progress

@@ -1,6 +1,6 @@
 # Эталонная выборка (Golden Set)
 
-Эталонная выборка $`G = G^+ \sqcup G^{\bot}`$ вопросов на русском языке с инвариантным во времени ответом по корпусу новостных текстов $`D`$ — основной артефакт данных выпускной квалификационной работы «Система оценки качества ответов больших языковых моделей по новостным текстам стран Восточной Азии». Формальные определения — в [`docs/problem_statement.md`](../../docs/problem_statement.md), процедура разметки — в [`docs/annotation_guidelines.md`](../../docs/annotation_guidelines.md), схема записи — в [`schema.json`](schema.json), история версий — в [`CHANGELOG.md`](CHANGELOG.md).
+Эталонная выборка $`G = G^+ \sqcup G^{\bot}`$ вопросов на русском языке с инвариантным во времени ответом по корпусу новостных текстов $`D`$ — основной артефакт данных выпускной квалификационной работы «Система оценки качества ответов больших языковых моделей по новостным текстам стран Восточной Азии». Формальные определения — в [`docs/problem_statement.md`](../../docs/problem_statement.md), протокол разметки — в [`docs/annotation_protocol.md`](../../docs/annotation_protocol.md), инструкции аннотатора и адъюдикатора — в [`docs/annotation_guidelines.md`](../../docs/annotation_guidelines.md) и [`docs/adjudication_guidelines.md`](../../docs/adjudication_guidelines.md), схема записи — в [`schema.json`](schema.json), история версий — в [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Назначение
 
