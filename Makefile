@@ -13,10 +13,12 @@ EVAL_CONFIG  ?= code/configs/eval.yaml
 JUDGE_CONFIG ?= code/configs/judge.yaml
 SYSTEM       ?= code/configs/systems/prod.yaml
 GS_VERSION   ?= v1.0
+# Раунд разметки в Argilla: annotation.yaml — пилот, annotation_main.yaml — основной раунд (270 позиций)
+ANNOTATION_CONFIG ?= code/configs/annotation_main.yaml
 # Идентификатор прогона: дата-время и имя конфигурации системы (например 20270115-093000-prod).
 RUN_ID       ?= $(shell date +%Y%m%d-%H%M%S)-$(notdir $(basename $(SYSTEM)))
 
-.PHONY: help audit seed-remap snapshot sample drafts pilot-drafts translate topk annotation-setup annotation-push annotation-update-settings annotation-progress annotation-pull agreement build-gs run judge validate stats tables check
+.PHONY: help audit seed-remap snapshot sample drafts pilot-drafts main-menu-export main-menu-import main-balance main-translate main-topk translate topk annotation-setup annotation-push annotation-update-settings annotation-progress annotation-pull agreement build-gs run judge validate stats tables check
 
 help: ## список целей
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -52,26 +54,41 @@ translate: ## перевод документов пилота по абзаца
 topk: ## топ-20 ретривера f_prod у всех позиций пилота (нужен туннель к корпусу) → data/_cache/retrieval/pilot_top20.jsonl (не в git)
 	$(PYTHON) -m code.annotation.retrieve_topk
 
+main-menu-export: ## основной раунд (draft-v2, ADR-026): запросы меню кандидатов по типам вопроса → data/_cache/draft_requests/main-v2/
+	$(PYTHON) -m code.annotation.generate_drafts --main --prompt draft-v2 --export-requests data/_cache/draft_requests/main-v2
+
+main-menu-import: ## основной раунд: меню из ответов data/_cache/draft_responses/main-v2/ → data/golden_set/drafts/candidates.jsonl
+	$(PYTHON) -m code.annotation.generate_drafts --main --prompt draft-v2 --import-responses data/_cache/draft_responses/main-v2
+
+main-balance: ## основной раунд: один кандидат на позицию, типы вопроса поровну → data/golden_set/drafts/drafts.jsonl, type_balance.md
+	$(PYTHON) -m code.annotation.balance_types
+
+main-translate: ## основной раунд: перевод 270 документов (ADR-025) → data/_cache/translations/, отчёт data/golden_set/drafts/
+	$(PYTHON) -m code.annotation.translate_documents --main --report-path data/golden_set/drafts/translation_report.md
+
+main-topk: ## основной раунд: топ-20 ретривера f_prod (нужен туннель к корпусу) → data/_cache/retrieval/main_top20.jsonl (не в git)
+	$(PYTHON) -m code.annotation.retrieve_topk --config code/configs/annotation_main.yaml
+
 annotation-setup: ## Argilla: рабочие пространства и учётные записи a1–a3, adj; пароли в data/_private/ (не в git)
-	$(PYTHON) -m code.annotation.argilla_tasks setup
+	$(PYTHON) -m code.annotation.argilla_tasks setup --config $(ANNOTATION_CONFIG)
 
 annotation-push: ## Argilla: датасет пилота (3 ответа на запись) и записи; предпросмотр — PREVIEW=путь.html
-	$(PYTHON) -m code.annotation.argilla_tasks push $(if $(PREVIEW),--preview $(PREVIEW))
+	$(PYTHON) -m code.annotation.argilla_tasks push $(if $(PREVIEW),--preview $(PREVIEW)) --config $(ANNOTATION_CONFIG)
 
 annotation-update-settings: ## Argilla: обновить инструкцию, памятку и тексты формы у существующего датасета (записи и ответы не меняются)
-	$(PYTHON) -m code.annotation.argilla_tasks update-settings
+	$(PYTHON) -m code.annotation.argilla_tasks update-settings --config $(ANNOTATION_CONFIG)
 
 annotation-progress: ## Argilla: ход разметки по аннотаторам
-	$(PYTHON) -m code.annotation.argilla_tasks progress
+	$(PYTHON) -m code.annotation.argilla_tasks progress --config $(ANNOTATION_CONFIG)
 
 annotation-pull: ## Argilla: отправленные ответы → data/golden_set/v0.1-pilot/annotations.jsonl
-	$(PYTHON) -m code.annotation.argilla_tasks pull
+	$(PYTHON) -m code.annotation.argilla_tasks pull --config $(ANNOTATION_CONFIG)
 
 agreement: ## согласие аннотаторов: α Криппендорфа (≥0.67 допустимо, ≥0.8 надёжно), Fleiss κ, попарный F1 ≥ 0.8
 	$(PYTHON) -m code.annotation.agreement --config $(EVAL_CONFIG)
 
-build-gs: ## адъюдикация расхождений и сборка Golden Set версии GS_VERSION (JSONL по schema.json, split, sha256)
-	$(PYTHON) -m code.annotation.adjudicate --config $(EVAL_CONFIG)
+build-gs: ## сведение разметки трёх аннотаторов (ADR-027) и сборка Golden Set версии GS_VERSION (JSONL по schema.json, split, sha256)
+	$(PYTHON) -m code.annotation.aggregate --config $(ANNOTATION_CONFIG)
 	$(PYTHON) -m code.annotation.build_golden_set --config $(EVAL_CONFIG) --version $(GS_VERSION)
 
 # --- Прогоны систем H_eval и судьи --------------------------------------------------------

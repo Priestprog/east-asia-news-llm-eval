@@ -24,8 +24,14 @@ r"""Черновики записей эталонной выборки моде
 (``code/audit/markers.py``), дословное вхождение ``evidence_span_zh`` в текст документа.
 Это подсказки координатору, а не разметка.
 
-Запуск пилота (30 позиций): ``python -m code.annotation.generate_drafts --pilot``;
-повторный запуск дописывает только недостающие позиции.
+Запуск пилота (30 позиций): ``python -m code.annotation.generate_drafts --pilot``; основной раунд
+(270 позиций без пилота) — ``--main``. Повторный запуск дописывает только недостающие позиции.
+
+Основной раунд идёт с промптом ``draft-v2`` (``--prompt draft-v2``, ADR-026): по документу модель
+предлагает меню — до одного кандидата на каждый тип вопроса с оценкой ``fit``, — а один кандидат
+на позицию выбирает :mod:`code.annotation.balance_types` так, чтобы типы вопроса были представлены
+поровну. Меню собираются только через ``--export-requests`` / ``--import-responses``
+(``data/golden_set/drafts/candidates.jsonl``).
 """
 
 from __future__ import annotations
@@ -84,6 +90,30 @@ DRAFT_SCHEMA: dict = {
     "additionalProperties": False,
 }
 
+# Промпт с mode = menu (draft-v2, ADR-026): по документу — кандидаты, не больше одного на тип вопроса;
+# у каждого — поля черновика без suitable/unsuitable_reason (они относятся к документу) и оценка fit.
+CANDIDATE_SCHEMA: dict = {
+    "type": "object",
+    "properties": {**{k: v for k, v in DRAFT_SCHEMA["properties"].items() if k not in ("suitable", "unsuitable_reason")},
+                   "fit": {"type": "integer", "enum": [1, 2, 3]}},
+    "required": [k for k in DRAFT_SCHEMA["required"] if k not in ("suitable", "unsuitable_reason")] + ["fit"],
+    "additionalProperties": False,
+}
+MENU_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "suitable": {"type": "boolean"},
+        "unsuitable_reason": {"type": "string"},
+        "candidates": {"type": "array", "items": CANDIDATE_SCHEMA, "minItems": 1, "maxItems": len(QUESTION_TYPES)},
+    },
+    "required": ["suitable", "unsuitable_reason", "candidates"],
+    "additionalProperties": False,
+}
+
+
+def is_menu(prompt: dict) -> bool:
+    return prompt.get("mode") == "menu"
+
 
 @dataclass
 class Draft:
@@ -129,12 +159,42 @@ def read_jsonl(path: str | Path) -> list[dict]:
         return [json.loads(line) for line in fh if line.strip()]
 
 
-def load_positions(path: str | Path, pilot: bool = False, include_reserve: bool = False) -> list[dict]:
-    """Позиции для черновиков: пилот (30) либо основные (300), по желанию с резервом (60)."""
+def load_positions(path: str | Path, pilot: bool = False, include_reserve: bool = False,
+                   main: bool = False) -> list[dict]:
+    """Позиции для черновиков: пилот (30), основной раунд без пилота (``main``, 270) либо все основные
+    (300), по желанию с резервом (60). Заменённые позиции не возвращаются; резервная позиция после
+    замены (``sample_documents replace``) получает ``reserve = false`` и попадает в выборку сама."""
     positions = [p for p in read_jsonl(path) if not p.get("replaced_by")]
     if pilot:
         return [p for p in positions if p["pilot"]]
+    if main:
+        return [p for p in positions if not p["pilot"] and not p["reserve"]]
     return [p for p in positions if include_reserve or not p["reserve"]]
+
+
+def round_positions(cfg: dict) -> list[dict]:
+    """Позиции раунда разметки по ключу ``selection`` конфигурации разметки (``code/configs/annotation*.yaml``):
+    ``pilot`` (по умолчанию, 30), ``main`` (270 без пилота) или ``pool`` (все 300 основных позиций — единый
+    пул разметки, ADR-027)."""
+    selection = cfg.get("selection", "pilot")
+    if selection not in ("pilot", "main", "pool"):
+        raise ValueError(f"selection = {selection!r}: ожидается pilot, main или pool")
+    return load_positions(REPO_ROOT / cfg["paths"]["positions"], pilot=selection == "pilot", main=selection == "main")
+
+
+def read_by_position(paths: str | Sequence[str]) -> dict[str, dict]:
+    """Строки JSONL одного или нескольких файлов (``paths.drafts``, ``paths.retrieval`` конфигурации — строка
+    или список) по ``position_id``; позиция в двух файлах — ошибка, отсутствующий файл пропускается."""
+    out: dict[str, dict] = {}
+    for rel in [paths] if isinstance(paths, str) else paths:
+        path = REPO_ROOT / rel
+        if not path.exists():
+            continue
+        for row in read_jsonl(path):
+            if row["position_id"] in out:
+                raise ValueError(f"{row['position_id']}: позиция встречается в нескольких файлах ({rel})")
+            out[row["position_id"]] = row
+    return out
 
 
 def load_seed_pool(path: str | Path) -> dict[int, dict]:
@@ -158,6 +218,9 @@ def build_draft_prompt(position: dict, doc: dict, seed_pool: dict[int, dict], pr
     """
     role = position["role"]
     task_key = "answerable_seed" if role == "answerable" and position["origin"] == "seed" else role
+    task = prompt["tasks"][task_key + "_menu" if is_menu(prompt) else task_key].strip()
+    if is_menu(prompt):
+        task += "\n\n" + prompt["menu"].strip()
     lines = [
         f"Документ webpage_id={position['webpage_id']}; источник: {position['netloc']} "
         f"({position['region']}); дата публикации: {position['published_at']}.",
@@ -166,7 +229,7 @@ def build_draft_prompt(position: dict, doc: dict, seed_pool: dict[int, dict], pr
         (doc.get("text_zh") or "").strip(),
         "</document>",
         "",
-        prompt["tasks"][task_key].strip(),
+        task,
     ]
     if task_key == "answerable_seed":
         lines.append("")
@@ -328,7 +391,7 @@ def export_requests(positions: Sequence[dict], seed_pool: dict[int, dict], cfg: 
             "prompt_id": cfg["prompt_id"],
             "system": prompt["system"],
             "user": build_draft_prompt(p, doc, seed_pool, prompt),
-            "response_schema": DRAFT_SCHEMA,
+            "response_schema": MENU_SCHEMA if is_menu(prompt) else DRAFT_SCHEMA,
         }
         (out_dir / f"{p['position_id']}.json").write_text(json.dumps(request, ensure_ascii=False, indent=1),
                                                           encoding="utf-8")
@@ -362,6 +425,68 @@ def import_responses(positions: Sequence[dict], seed_pool: dict[int, dict], cfg:
     return drafts
 
 
+def candidate_draft(position: dict, cfg: dict, menu: dict, cand: dict, doc: dict,
+                    seed_pool: dict[int, dict]) -> Draft:
+    """Черновик из одного кандидата меню (draft-v2): поля кандидата и пригодность документа."""
+    draft = new_draft(position, cfg)
+    out = {**cand, "suitable": menu["suitable"], "unsuitable_reason": menu["unsuitable_reason"]}
+    return fill_draft(draft, out, position, doc, seed_pool)
+
+
+def import_menus(positions: Sequence[dict], seed_pool: dict[int, dict], cfg: dict, responses_dir: Path,
+                 out_path: Path, model: str) -> list[dict]:
+    """Меню кандидатов из ответов вне API (draft-v2): проверка по ``MENU_SCHEMA``, один кандидат на тип
+    вопроса, проверки черновика у каждого кандидата. Строка на позицию — в ``out_path``."""
+    import jsonschema
+
+    rows = []
+    for p in positions:
+        row = {"position_id": p["position_id"], "webpage_id": p["webpage_id"], "role": p["role"],
+               "origin": p["origin"], "region": p["region"], "draft_model": model,
+               "draft_prompt_id": cfg["prompt_id"], "channel": "session", "created_at": "", "error": None,
+               "suitable": None, "unsuitable_reason": "", "candidates": []}
+        path = responses_dir / f"{p['position_id']}.json"
+        try:
+            if not path.exists():
+                raise ValueError("нет ответа")
+            row["created_at"] = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat(timespec="seconds")
+            menu = json.loads(path.read_text(encoding="utf-8"))
+            jsonschema.validate(menu, MENU_SCHEMA)
+            types = [c["question_type"] for c in menu["candidates"]]
+            if len(types) != len(set(types)):
+                raise ValueError(f"повторяются типы вопроса: {types}")
+        except (ValueError, json.JSONDecodeError, jsonschema.ValidationError) as exc:
+            row["error"] = str(exc).splitlines()[0]
+            rows.append(row)
+            continue
+        doc = load_document(REPO_ROOT / cfg["paths"]["documents"], p["webpage_id"])
+        row["suitable"], row["unsuitable_reason"] = menu["suitable"], menu["unsuitable_reason"].strip()
+        for cand in menu["candidates"]:
+            row["candidates"].append({**cand, "checks": candidate_draft(p, cfg, menu, cand, doc, seed_pool).checks})
+        rows.append(row)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    return rows
+
+
+def summarize_menus(path: Path) -> str:
+    """Сводка по меню кандидатов: ошибки, пригодность, предложение по типам вопроса и оценкам fit."""
+    rows = read_jsonl(path)
+    ok = [r for r in rows if not r["error"]]
+    lines = [f"Позиций: {len(rows)}; с ошибкой: {len(rows) - len(ok)}; файл: {path.relative_to(REPO_ROOT)}",
+             f"Непригодные документы (suitable = false): {sum(r['suitable'] is False for r in ok)}",
+             f"Кандидатов: {sum(len(r['candidates']) for r in ok)}; в среднем на позицию: "
+             f"{sum(len(r['candidates']) for r in ok) / max(len(ok), 1):.1f}"]
+    for role in sorted({r["role"] for r in ok}):
+        group = [r for r in ok if r["role"] == role]
+        supply = {t: sum(any(c["question_type"] == t for c in r["candidates"]) for r in group) for t in QUESTION_TYPES}
+        lines.append(f"{role} ({len(group)}), позиций с кандидатом типа: "
+                     + ", ".join(f"{t} — {n}" for t, n in supply.items()))
+    for err in [r for r in rows if r["error"]]:
+        lines.append(f"ошибка {err['position_id']}: {err['error']}")
+    return "\n".join(lines)
+
+
 def summarize(path: Path) -> str:
     """Сводка по файлу черновиков: роли, ошибки, пригодность, проверки, токены."""
     drafts = read_jsonl(path)
@@ -385,7 +510,10 @@ def summarize(path: Path) -> str:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--config", default=DEFAULT_CONFIG)
+    parser.add_argument("--prompt", default=None,
+                        help="версия промпта (по умолчанию prompt_id конфигурации); draft-v2 — меню кандидатов")
     parser.add_argument("--pilot", action="store_true", help="только 30 позиций пилота")
+    parser.add_argument("--main", action="store_true", help="основной раунд: 270 позиций без пилота")
     parser.add_argument("--include-reserve", action="store_true", help="вместе с 60 резервными позициями")
     parser.add_argument("--limit", type=int, default=None, help="не больше N позиций (отладка)")
     parser.add_argument("--workers", type=int, default=None)
@@ -403,13 +531,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     load_env()
     cfg = load_config(REPO_ROOT / args.config)
-    out_path = REPO_ROOT / (args.out or cfg["paths"]["out_pilot" if args.pilot else "out_main"])
+    if args.pilot and args.main:
+        raise SystemExit("--pilot и --main несовместимы")
+    if args.prompt:
+        cfg["prompt_id"] = args.prompt
+    menu = is_menu(cfg["prompts"][cfg["prompt_id"]])
+    if menu and args.pilot:
+        raise SystemExit(f"{cfg['prompt_id']}: меню кандидатов только для основного раунда (пилот — draft-v1)")
+    if menu and not (args.export_requests or args.import_responses or args.summary or args.dry_run):
+        raise SystemExit(f"{cfg['prompt_id']}: меню кандидатов — только через --export-requests / --import-responses; "
+                         "черновики из меню собирает code.annotation.balance_types")
+    default_out = "candidates_main" if menu else ("out_pilot" if args.pilot else "out_main")
+    out_path = REPO_ROOT / (args.out or cfg["paths"][default_out])
     if args.summary:
-        print(summarize(out_path))
+        print(summarize_menus(out_path) if menu else summarize(out_path))
         return 0
 
     positions = load_positions(REPO_ROOT / cfg["paths"]["positions"], pilot=args.pilot,
-                               include_reserve=args.include_reserve)
+                               include_reserve=args.include_reserve, main=args.main)
     kept = [d for d in read_jsonl(out_path) if not d["error"]] if out_path.exists() else []
     done = {d["position_id"] for d in kept}
     todo = [p for p in positions if p["position_id"] not in done][: args.limit]
@@ -421,6 +560,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"запросов: {len(positions)} → {args.export_requests}", file=sys.stderr)
         return 0
     if args.import_responses:
+        if menu:
+            import_menus(positions, seed_pool, cfg, REPO_ROOT / args.import_responses, out_path, cfg["draft_model"])
+            print(summarize_menus(out_path))
+            return 0
         import_responses(positions, seed_pool, cfg, REPO_ROOT / args.import_responses, out_path, cfg["draft_model"])
         print(summarize(out_path))
         return 0

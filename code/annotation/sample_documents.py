@@ -444,8 +444,10 @@ def check_constraints(positions: list[Position], cfg: dict, t0: str, snapshot_id
     pilot = [p for p in main if p.pilot]
     checks = {
         "основных позиций": (len(main), cfg["n_positions"]),
-        # резерв считается вместе с уже использованными для замен позициями
-        "резервных позиций": (sum(p.reserve or p.replaces is not None for p in positions), cfg["n_reserve"]),
+        # резерв считается вместе с уже использованными для замен позициями; статьи seed pool,
+        # добранные для замены seed-позиций (s-NNN), в резерв отбора не входят
+        "резервных позиций": (sum((p.reserve or p.replaces is not None) and not p.position_id.startswith("s-")
+                                  for p in positions), cfg["n_reserve"]),
         "seed-позиций": (sum(p.origin == "seed" for p in main), sum(cfg["n_seed"].values())),
         "кандидатов в G⊥": (sum(p.role == "unanswerable_candidate" for p in main), cfg["n_unanswerable"]),
         "позиций пилота": (len(pilot), cfg["pilot"]["seed"] + cfg["pilot"]["new"]),
@@ -472,7 +474,8 @@ def check_constraints(positions: list[Position], cfg: dict, t0: str, snapshot_id
 
 def write_report(positions: list[Position], path: Path, meta: dict) -> None:
     main = [p for p in positions if is_main(p)]
-    reserve_total = sum(p.reserve or p.replaces is not None for p in positions)
+    reserve_total = sum((p.reserve or p.replaces is not None) and not p.position_id.startswith("s-") for p in positions)
+    from_seed_pool = sum(p.position_id.startswith("s-") for p in positions)
 
     def table(title: str, key) -> list[str]:
         cnt = Counter(key(p) for p in main)
@@ -488,8 +491,9 @@ def write_report(positions: list[Position], path: Path, meta: dict) -> None:
         f"SHA-256 списка идентификаторов `{meta['ids_sha256'][:16]}…` (`data/corpus_snapshot/meta.json`).",
         "",
         f"Основных позиций: {len(main)} (seed pool — {sum(p.origin == 'seed' for p in main)}, "
-        f"новых — {sum(p.origin == 'new' for p in main)}); резерв — {reserve_total}; "
-        f"пилот — {sum(p.pilot for p in main)}. Охват: {len(months)} месяцев ({months[0]} — {months[-1]}), "
+        f"новых — {sum(p.origin == 'new' for p in main)}); резерв — {reserve_total}"
+        + (f", добрано из seed pool для замены seed-позиций — {from_seed_pool}" if from_seed_pool else "")
+        + f"; пилот — {sum(p.pilot for p in main)}. Охват: {len(months)} месяцев ({months[0]} — {months[-1]}), "
         f"{len({p.netloc for p in main})} доменов, {len({p.region for p in main})} регионов.",
         "",
     ]
@@ -513,13 +517,49 @@ def write_report(positions: list[Position], path: Path, meta: dict) -> None:
 
 # ---------------------------------------------------------------- replace
 
-def replace(positions_path: Path, position_id: str, reason: str, config: str) -> Position:
+def seed_pool_candidates(positions: list[Position], old: Position) -> list[Position]:
+    """Неиспользованные статьи seed pool того же домена, что и ``old``: в Qdrant и в снимке $D_{t_0}$,
+    с метаданными из ``warc_to_webpage.csv``. Резерв отбора состоит только из новых документов, поэтому
+    seed-позицию иначе заменить нечем."""
+    with open(SEED_POOL_DIR / "warc_to_webpage.csv", encoding="utf-8", newline="") as fh:
+        mapping = {int(m["webpage_id"]): m for m in csv.DictReader(fh) if m["webpage_id"]}
+    used = {p.webpage_id for p in positions}
+    by_wid: dict[int, list[dict]] = defaultdict(list)
+    for q in read_jsonl(SEED_POOL_DIR / "seed_pool.jsonl"):
+        w = q["webpage_id"]
+        if w is not None and q["in_qdrant"] and q["netloc"] == old.netloc and w not in used:
+            by_wid[w].append(q)
+    snapshot_ids = set(load_snapshot_ids())
+    out = []
+    for w, qs in sorted(by_wid.items()):
+        m = mapping.get(w)
+        if m is None or w not in snapshot_ids:
+            continue
+        out.append(Position(
+            position_id="", webpage_id=w, urn_uuid=m["urn_uuid"] or None, uri=m["uri"],
+            published_at=m["published_at"], netloc=m["netloc"], region=old.region, origin="seed",
+            role=old.role, pilot=False, reserve=True, seed_refs=sorted(q["seed_idx"] for q in qs),
+            category_hint=category_hint(m["uri"]),
+        ))
+    return out
+
+
+def replace(positions_path: Path, position_id: str, reason: str, config: str,
+            allow_role_change: bool = False, from_seed_pool: bool = False) -> Position:
     r"""Замена позиции ``position_id`` резервной из той же страты.
 
     Кандидаты — неиспользованные резервные позиции с тем же доменом, происхождением и ролью; среди
     них берётся ближайшая по месяцу публикации (при равенстве — меньший номер), при отсутствии —
     тот же регион. Резервная получает ``reserve = false``, флаг пилота заменённой и ``replaces``;
     заменённая — ``pilot = false``, ``replaced_by`` и причину. Ограничения отбора проверяются заново.
+
+    Если таких кандидатов нет:
+
+    * ``allow_role_change`` — для кандидата в $G^{\bot}$ берётся резервная позиция того же
+      происхождения и домена (региона) с другой ролью и получает роль заменённой: роль — это задание
+      для черновика, а не свойство документа, поэтому число кандидатов в $G^{\bot}$ сохраняется;
+    * ``from_seed_pool`` — для seed-позиции берётся неиспользованная статья seed pool того же домена
+      (:func:`seed_pool_candidates`); она получает номер ``s-NNN`` и в резерв отбора не засчитывается.
     """
     positions = [Position(**row) for row in read_jsonl(positions_path)]
     by_id = {p.position_id: p for p in positions}
@@ -532,12 +572,22 @@ def replace(positions_path: Path, position_id: str, reason: str, config: str) ->
         y2, m2 = map(int, p.published_at[:7].split("-"))
         return abs((y1 - y2) * 12 + (m1 - m2))
 
-    free = [p for p in positions if p.reserve and p.origin == old.origin and p.role == old.role]
-    candidates = [p for p in free if p.netloc == old.netloc] or [p for p in free if p.region == old.region]
+    def same_stratum(pool: list[Position]) -> list[Position]:
+        return [p for p in pool if p.netloc == old.netloc] or [p for p in pool if p.region == old.region]
+
+    free = [p for p in positions if p.reserve and p.origin == old.origin]
+    candidates = same_stratum([p for p in free if p.role == old.role])
+    if not candidates and allow_role_change and old.role == "unanswerable_candidate":
+        candidates = same_stratum(free)
+    if not candidates and from_seed_pool and old.origin == "seed":
+        candidates = seed_pool_candidates(positions, old)
     if not candidates:
         raise ValueError(f"{position_id}: нет резервной позиции той же страты")
-    new = min(candidates, key=lambda p: (month_gap(p), p.position_id))
-    new.reserve, new.pilot, new.replaces = False, old.pilot, old.position_id
+    new = min(candidates, key=lambda p: (month_gap(p), p.position_id, p.webpage_id))
+    if not new.position_id:
+        new.position_id = f"s-{sum(p.position_id.startswith('s-') for p in positions) + 1:03d}"
+        positions.append(new)
+    new.reserve, new.pilot, new.replaces, new.role = False, old.pilot, old.position_id, old.role
     old.pilot, old.replaced_by, old.replace_reason = False, new.position_id, reason
 
     cfg = load_config(REPO_ROOT / config)
@@ -552,8 +602,8 @@ def replace(positions_path: Path, position_id: str, reason: str, config: str) ->
 
 # ---------------------------------------------------------------- fetch
 
-def fetch(positions_path: Path) -> None:
-    positions = read_jsonl(positions_path)
+def fetch(positions_path: Path, only: set[str] | None = None) -> None:
+    positions = [p for p in read_jsonl(positions_path) if only is None or p["position_id"] in only]
     DOCS_CACHE.mkdir(parents=True, exist_ok=True)
     conn = connect_webmedia()
     client, collection = connect_qdrant()
@@ -592,6 +642,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--out", default="data/seed_pool/sampled_documents.jsonl")
     parser.add_argument("--position", help="replace: идентификатор заменяемой позиции")
     parser.add_argument("--reason", help="replace: причина замены (попадает в отчёт отбора)")
+    parser.add_argument("--allow-role-change", action="store_true",
+                        help="replace: для кандидата в G⊥ — резервная позиция с другой ролью, если нет такой же")
+    parser.add_argument("--from-seed-pool", action="store_true",
+                        help="replace: для seed-позиции — неиспользованная статья seed pool того же домена")
+    parser.add_argument("--only", default=None, help="fetch: только эти позиции (через запятую)")
     return parser
 
 
@@ -611,11 +666,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         write_report(positions, SEED_POOL_DIR / "sampling_report.md", meta)
         print(f"{out.relative_to(REPO_ROOT)}: {len(positions)} позиций; отчёт — data/seed_pool/sampling_report.md")
     elif args.command == "fetch":
-        fetch(out)
+        fetch(out, only=set(args.only.split(",")) if args.only else None)
     elif args.command == "replace":
         if not args.position or not args.reason:
             raise SystemExit("replace: нужны --position и --reason")
-        new = replace(out, args.position, args.reason, args.config)
+        new = replace(out, args.position, args.reason, args.config,
+                      allow_role_change=args.allow_role_change, from_seed_pool=args.from_seed_pool)
         print(f"{args.position} → {new.position_id} ({new.netloc}, {new.published_at}); "
               f"обновлены {out.relative_to(REPO_ROOT)} и data/seed_pool/sampling_report.md")
     return 0

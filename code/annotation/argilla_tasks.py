@@ -1,8 +1,9 @@
-r"""Разметка пилота в Argilla: учётные записи, датасет, выгрузка заданий и ответов.
+r"""Разметка в Argilla: учётные записи, датасет, выгрузка заданий и ответов.
 
 Платформа — Argilla 2.8.0 на ``https://annotate.ai.ivran.ru`` (стек ``production/annotation``
 репозитория промышленной системы). Каждая запись получает ровно $R = 3$ независимых ответа
-(``TaskDistribution(min_submitted=3)``); аннотатор видит только свои ответы.
+(``TaskDistribution(min_submitted=3)``); аннотатор видит только свои ответы. Размечают только аннотаторы
+A1–A3 (ADR-027); единый пул — пилот и основной раунд (``selection: pool``).
 
 Что видит аннотатор (протокол разметки, §3): черновик вопроса; карточку черновика (ответ, алиасы,
 evidence span, источник, дата публикации); документ — оригинал и перевод рядом, абзац к абзацу,
@@ -14,7 +15,7 @@ evidence span, источник, дата публикации); докумен�
 
 Подкоманды:
 
-* ``setup`` — рабочие пространства и учётные записи аннотаторов и адъюдикатора; пароли новых
+* ``setup`` — рабочее пространство и учётные записи аннотаторов; пароли новых
   учётных записей пишутся в ``data/_private/annotator_accounts.csv`` (в репозиторий не входит);
 * ``preflight`` — проверка записей перед загрузкой и отпечаток входных данных
   ``data/_cache/upload_manifest.json``;
@@ -25,6 +26,9 @@ evidence span, источник, дата публикации); докумен�
 * ``verify`` — сверка датасета на сервере с локальными записями и настройками: поля, шаблоны, вопросы,
   подсказки, метки, инструкция;
 * ``delete`` — удаление тестовой копии (рабочий датасет и датасет с ответами не удаляются);
+* ``retire`` — снятие с сервера прежних объектов: датасета ``--dataset`` в рабочем пространстве
+  (не рабочего и только без ответов, включая черновики ответов), учётных записей ``--user`` и пустых
+  рабочих пространств ``--workspace-name`` (``--dry-run`` — только показать);
 * ``progress`` — ход разметки по аннотаторам;
 * ``pull`` — отправленные ответы в ``annotations.jsonl``: строки ``{"draft_id", "annotator",
   <поля>}`` (контракт ``export_sheets.import_annotations``) с проверкой допустимости значений.
@@ -52,11 +56,13 @@ from code.annotation.generate_drafts import (
     DIFFICULTIES,
     LABELS,
     QUESTION_TYPES,
-    load_positions,
+    read_by_position,
     read_jsonl,
+    round_positions,
 )
 
 DEFAULT_CONFIG = "code/configs/annotation.yaml"
+LOG_BATCH = 20                 # записей за один запрос загрузки в Argilla
 RULES = ["E1", "E2", "E3", "E4", "E5"]
 
 # ---------------------------------------------------------------- шаблоны полей
@@ -388,6 +394,8 @@ GUIDELINES_MEMO = """# Памятка аннотатора
 
 Дата-якорь, тип вопроса, категория, сложность, ответ, алиасы, evidence span и S* проверьте и при необходимости исправьте. Комментарий обязателен при любом исправлении.
 
+Разметка окончательна и не перепроверяется: заполняйте все пункты полностью, сомнения пишите в комментарии.
+
 ## 4. Оригинал главнее перевода
 
 Перевод вспомогательный; читающий по-китайски сверяет с оригиналом числа, даты и имена в ответе.
@@ -405,7 +413,7 @@ GUIDELINES_LIMIT = 10_000
 # Тексты для аннотаторов не должны раскрывать устройство репозитория и методики (замечания к инструкции,
 # 01.11): пути, ссылки на ADR, формулы в разметке GitHub, обозначения постановки
 FORBIDDEN_IN_ANNOTATOR_TEXT = ("docs/", "data/", "code/", ".md", ".json", "ADR-", "$`", "\\math", "⊥", "G+",
-                               "problem_statement", "кандидат")
+                               "problem_statement", "кандидат", "адъюдик", "пилот", "раунд")  # без учёта регистра
 
 # Формулы инструкции (разметка GitHub $`…`$) Argilla не отрисовывает — переводятся в текст
 _TEX_SYMBOLS = {
@@ -680,19 +688,42 @@ def build_settings(guidelines: str, min_submitted: int, memo: str):
 
 # ---------------------------------------------------------------- записи
 
+ELLIPSIS = re.compile(r"…+|\.{3,}")
+
+
 def evidence_parts(evidence_zh: str) -> list[str]:
-    """Части цитаты для подсветки: цитата без переносов строк и её строки (перенос по ширине склеен
-    при переводе, но в исходной цитате может остаться)."""
+    """Части цитаты для подсветки: цитата без переносов строк, её строки (перенос по ширине склеен
+    при переводе, но в исходной цитате может остаться) и куски между многоточиями (цитата с пропуском,
+    «……» в черновике)."""
     ev = (evidence_zh or "").strip()
-    parts = [ev.replace("\n", "")] + [s.strip() for s in ev.splitlines() if len(s.strip()) >= 4]
+    pieces = [s.strip() for s in ev.splitlines()]
+    pieces += [s.strip() for line in pieces for s in ELLIPSIS.split(line)] if ELLIPSIS.search(ev) else []
+    parts = [ev.replace("\n", "")] + [s for s in pieces if len(s) >= 4]
     return list(dict.fromkeys(p for p in parts if p))
 
 
 def evidence_flags(paragraphs: list[dict], parts: list[str]) -> None:
-    """Отметка абзацев evidence span: содержит часть цитаты или целиком входит в неё."""
+    """Отметка абзацев evidence span: содержит часть цитаты, целиком входит в неё или пересекается
+    с ней, когда цитата приходится на границу абзацев (в источнике строка перенесена внутри цитаты,
+    а перевод разбил текст по этому переносу). Пробелы и переносы строк при сравнении не учитываются."""
     whole = parts[0] if parts else ""
     for p in paragraphs:
         p["ev"] = any(part in p["zh"] for part in parts) or (len(p["zh"]) >= 8 and p["zh"] in whole)
+    if any(p["ev"] for p in paragraphs):
+        return
+    bounds, joined = [], ""
+    for p in paragraphs:
+        start = len(joined)
+        joined += re.sub(r"\s+", "", p["zh"])
+        bounds.append((start, len(joined)))
+    for part in (re.sub(r"\s+", "", x) for x in parts):
+        pos = joined.find(part) if part else -1
+        while pos >= 0:
+            end = pos + len(part)
+            for p, (s, e) in zip(paragraphs, bounds):
+                if s < end and pos < e:
+                    p["ev"] = True
+            pos = joined.find(part, end)
 
 
 def card_value(position: dict) -> dict:
@@ -728,12 +759,13 @@ def suggestions_for(draft: dict) -> list[tuple[str, object]]:
 
 
 def load_materials(cfg: dict) -> list[dict]:
-    """Материалы всех позиций пилота; отсутствие перевода, топ-20 или черновика — ошибка."""
+    """Материалы всех позиций раунда (``selection`` конфигурации: пилот, основной раунд или единый пул;
+    черновики и топ-20 — из одного файла или из списка файлов); отсутствие перевода, топ-20 или
+    черновика — ошибка."""
     paths = cfg["paths"]
-    positions = load_positions(REPO_ROOT / paths["positions"], pilot=True)
-    drafts = {d["position_id"]: d for d in read_jsonl(REPO_ROOT / paths["drafts"])}
-    retrieval = {r["position_id"]: r for r in read_jsonl(REPO_ROOT / paths["retrieval"])} \
-        if (REPO_ROOT / paths["retrieval"]).exists() else {}
+    positions = round_positions(cfg)
+    drafts = read_by_position(paths["drafts"])
+    retrieval = read_by_position(paths["retrieval"])
     items, errors = [], []
     for p in positions:
         pid, wid = p["position_id"], p["webpage_id"]
@@ -753,7 +785,7 @@ def load_materials(cfg: dict) -> list[dict]:
         tr = json.loads(tr_path.read_text(encoding="utf-8"))
         items.append({"position": p, "draft": draft, "doc": doc, "translation": tr, "retrieval": retrieval[pid]})
     if errors:
-        raise RuntimeError("материалы пилота неполны:\n  " + "\n  ".join(errors))
+        raise RuntimeError("материалы раунда неполны:\n  " + "\n  ".join(errors))
     return items
 
 
@@ -921,7 +953,7 @@ _SANDBOX_HEAD = ("<script>document.documentElement.setAttribute('data-theme',"
                  "body{background-color:var(--bg-field)}</style>")
 
 
-def write_preview(payload: dict, path: Path, guidelines: str = "", memo: str = "") -> None:
+def write_preview(payload: dict, path: Path, guidelines: str = "", memo: str = "", dataset: str = "pilot-v0.1") -> None:
     """Локальный HTML: инструкция (свёрнута, как панель Argilla), запись слева (поля в iframe, как в Argilla)
     и форма разметки справа с предзаполненными значениями; переключатель светлой и тёмной темы."""
     record_js = json.dumps({"fields": payload["fields"]}, ensure_ascii=False).replace("</", "<\\/")
@@ -951,7 +983,7 @@ def write_preview(payload: dict, path: Path, guidelines: str = "", memo: str = "
         f"<!doctype html><html data-theme='light'><head><meta charset='utf-8'>"
         f"<title>Предпросмотр {html.escape(payload['id'])}</title><style>{PREVIEW_STYLE}</style></head><body>"
         # шапка — как в Argilla (HeaderFeedbackTask.vue): .topbar--left между крошками и правой частью
-        f"<div class='topbar'><span>Home / staging / pilot-v0.1 · {html.escape(payload['id'])}</span>"
+        f"<div class='topbar'><span>Home / staging / {html.escape(dataset)} · {html.escape(payload['id'])}</span>"
         f"<div class='topbar--left'></div><div class='topbar--right'>"
         f"<button id='theme' type='button'>Светлая / тёмная тема</button></div></div>"
         + (f"<details class='guide'><summary>Инструкция (панель Argilla)</summary><div class='gt'>"
@@ -976,7 +1008,7 @@ def setup(cfg: dict) -> list[str]:
     import argilla as rg
 
     a, c = cfg["argilla"], client(cfg)
-    plan = [(u, a["workspace"]) for u in a["annotators"]] + [(a["adjudicator"], a["adjudication_workspace"])]
+    plan = [(u, a["workspace"]) for u in a["annotators"]]
     workspaces = {}
     for name in {ws for _, ws in plan}:
         workspaces[name] = c.workspaces(name) or rg.Workspace(name=name, client=c).create()
@@ -1045,7 +1077,7 @@ def count_responses(ds, submitted_only: bool = False) -> int:
 
 
 def build_payloads(cfg: dict) -> list[dict]:
-    """Записи пилота в порядке выдачи (перемешаны с seed из конфигурации)."""
+    """Записи раунда в порядке выдачи (перемешаны с seed из конфигурации; порядок одинаков для всех аннотаторов)."""
     payloads = [record_payload(it) for it in load_materials(cfg)]
     random.Random(cfg["argilla"]["seed"]).shuffle(payloads)
     return payloads
@@ -1058,8 +1090,8 @@ def push(cfg: dict, preview: Path | None, record_id: str | None = None, upsert: 
     if preview:
         chosen = next((p for p in payloads if p["id"] == record_id), None) if record_id else payloads[0]
         if chosen is None:
-            raise ValueError(f"{record_id}: нет такой записи в пилоте")
-        write_preview(chosen, preview, annotator_guidelines(cfg), annotator_memo(cfg))
+            raise ValueError(f"{record_id}: нет такой записи в раунде")
+        write_preview(chosen, preview, annotator_guidelines(cfg), annotator_memo(cfg), cfg["argilla"]["dataset"])
         return f"предпросмотр {chosen['id']}: {preview}"
     problems = preflight_problems(cfg, payloads)
     if problems:
@@ -1077,7 +1109,8 @@ def push(cfg: dict, preview: Path | None, record_id: str | None = None, upsert: 
                          suggestions=[rg.Suggestion(question_name=n, value=v, agent="prefill", type="model")
                                       for n, v in p["suggestions"]])
                for p in payloads]
-    ds.records.log(records)
+    # записи большие (документ, перевод, топ-20): пачка по умолчанию (256) не укладывается в таймаут записи
+    ds.records.log(records, batch_size=LOG_BATCH)
     n = sum(1 for _ in ds.records)
     return f"{a['dataset']} ({a['workspace']}): записей {n}"
 
@@ -1158,14 +1191,14 @@ def _norm(value):
 
 def preflight_problems(cfg: dict, payloads: list[dict]) -> list[str]:
     """Проверка записей перед загрузкой (план, шаг B)."""
-    positions = load_positions(REPO_ROOT / cfg["paths"]["positions"], pilot=True)
+    positions = round_positions(cfg)
     expected = {p["position_id"] for p in positions}
     ids = [p["id"] for p in payloads]
     problems = []
     if len(ids) != len(set(ids)):
         problems.append("повторяющиеся id записей")
     if set(ids) != expected:
-        problems.append(f"id записей не совпадают с позициями пилота: лишние {sorted(set(ids) - expected)}, "
+        problems.append(f"id записей не совпадают с позициями раунда: лишние {sorted(set(ids) - expected)}, "
                         f"нет {sorted(expected - set(ids))}")
     labels = {q["name"]: q for q in QUESTIONS}
     for p in payloads:
@@ -1193,7 +1226,7 @@ def preflight_problems(cfg: dict, payloads: list[dict]) -> list[str]:
     # памятка, форма и инструкция: без путей репозитория, ссылок на ADR, формул и обозначений постановки
     guide_md = (REPO_ROOT / cfg["paths"]["guidelines"]).read_text(encoding="utf-8")
     texts = annotator_texts(guide_md)
-    leaked = [s for s in FORBIDDEN_IN_ANNOTATOR_TEXT if s in texts]
+    leaked = [s for s in FORBIDDEN_IN_ANNOTATOR_TEXT if s.lower() in texts.lower()]
     if leaked:
         problems.append(f"в текстах для аннотаторов недопустимые фрагменты: {leaked}")
     page = full_guidelines_page(guide_md)
@@ -1242,9 +1275,12 @@ def write_manifest(cfg: dict, payloads: list[dict]) -> Path:
     def sha(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
 
+    def shas(value: str | list[str]) -> dict[str, str]:
+        return {rel: sha(REPO_ROOT / rel) for rel in ([value] if isinstance(value, str) else value)}
+
     paths = cfg["paths"]
     translations = {}
-    for p in load_positions(REPO_ROOT / paths["positions"], pilot=True):
+    for p in round_positions(cfg):
         tr = json.loads((REPO_ROOT / paths["translations"] / f"{p['webpage_id']}.json").read_text(encoding="utf-8"))
         translations[p["position_id"]] = tr["sha256"]
     head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True).stdout.strip()
@@ -1253,12 +1289,12 @@ def write_manifest(cfg: dict, payloads: list[dict]) -> Path:
         "git_head": head,
         "dataset": cfg["argilla"]["dataset"], "workspace": cfg["argilla"]["workspace"],
         "records": [p["id"] for p in payloads],
-        "drafts_sha256": sha(REPO_ROOT / paths["drafts"]),
-        "retrieval_sha256": sha(REPO_ROOT / paths["retrieval"]),
+        "drafts_sha256": shas(paths["drafts"]),
+        "retrieval_sha256": shas(paths["retrieval"]),
         "translations_sha256": translations,
         "guidelines_sha256": hashlib.sha256(annotator_guidelines(cfg).encode("utf-8")).hexdigest(),
     }
-    out = REPO_ROOT / "data" / "_cache" / "upload_manifest.json"
+    out = REPO_ROOT / paths.get("manifest", "data/_cache/upload_manifest.json")
     out.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
 
@@ -1323,6 +1359,57 @@ def delete_dataset(cfg: dict, production: tuple[str, str]) -> str:
         ws.delete()
         note = f"; пустое рабочее пространство {a['workspace']} удалено"
     return f"удалён {a['dataset']} ({a['workspace']}){note}"
+
+
+def retire(cfg: dict, production: tuple[str, str], dataset: str | None, users: Sequence[str],
+           workspaces: Sequence[str], dry_run: bool = False) -> list[str]:
+    """Снятие с сервера прежних объектов (ADR-027): датасета в рабочем пространстве конфигурации,
+    учётных записей и рабочих пространств. Рабочий датасет не удаляется никогда; датасет — только без
+    ответов, включая черновики ответов (значит, никто не начал разметку); рабочее пространство — только
+    пустое и не рабочее; учётная запись — только не из списка аннотаторов конфигурации."""
+    a, c = cfg["argilla"], client(cfg)
+    report = []
+    if dataset:
+        if (a["workspace"], dataset) == production or dataset == production[1]:
+            raise RuntimeError(f"{dataset}: рабочий датасет не снимается")
+        ds = find_dataset(c, a["workspace"], dataset)
+        if ds is None:
+            report.append(f"датасета {dataset} в {a['workspace']} нет")
+        else:
+            n_resp = count_responses(ds)
+            if n_resp:
+                raise RuntimeError(f"{dataset}: в датасете есть ответы ({n_resp}, включая черновики) — снятие отменено")
+            report.append(f"датасет {dataset} ({a['workspace']}): записей {sum(1 for _ in ds.records)}, ответов 0"
+                          + ("" if dry_run else " — удалён"))
+            if not dry_run:
+                ds.delete()
+    for username in users:
+        if username in a["annotators"] or username == "owner":
+            raise RuntimeError(f"{username}: учётная запись аннотатора или владельца не снимается")
+        user = c.users(username)
+        if user is None:
+            report.append(f"учётной записи {username} нет")
+            continue
+        report.append(f"учётная запись {username} ({user.role})" + ("" if dry_run else " — удалена"))
+        if not dry_run:
+            user.delete()
+    for name in workspaces:
+        if name == a["workspace"]:
+            raise RuntimeError(f"{name}: рабочее пространство аннотаторов не снимается")
+        ws = c.workspaces(name)
+        if ws is None:
+            report.append(f"рабочего пространства {name} нет")
+            continue
+        datasets = [d.name for d in ws.datasets]
+        if datasets:
+            raise RuntimeError(f"{name}: в рабочем пространстве есть датасеты {datasets} — снятие отменено")
+        members = [u.username for u in ws.users]
+        report.append(f"рабочее пространство {name} (пользователи: {members or 'нет'})" + ("" if dry_run else " — удалено"))
+        if not dry_run:
+            for username in members:
+                c.users(username).remove_from_workspace(ws)
+            ws.delete()
+    return report
 
 
 # ---------------------------------------------------------------- ответы
@@ -1423,7 +1510,7 @@ def pull(cfg: dict) -> str:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("command", choices=["setup", "preflight", "push", "update-settings", "verify", "progress",
-                                            "pull", "delete"])
+                                            "pull", "delete", "retire"])
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--workspace", default=None, help="рабочее пространство (по умолчанию из конфигурации)")
     parser.add_argument("--dataset", default=None, help="датасет (по умолчанию из конфигурации)")
@@ -1431,6 +1518,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--record", default=None, help="push --preview: позиция для предпросмотра (по умолчанию первая)")
     parser.add_argument("--upsert", action="store_true", help="push: обновить записи существующего датасета")
     parser.add_argument("--allow-responses", action="store_true", help="verify: ответы в датасете не считать ошибкой")
+    parser.add_argument("--user", action="append", default=[], help="retire: учётная запись к удалению (можно несколько)")
+    parser.add_argument("--workspace-name", action="append", default=[],
+                        help="retire: пустое рабочее пространство к удалению (можно несколько)")
+    parser.add_argument("--dry-run", action="store_true", help="retire: только показать, что будет снято")
     return parser
 
 
@@ -1460,6 +1551,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(pull(cfg))
     elif args.command == "delete":
         print(delete_dataset(cfg, production))
+    elif args.command == "retire":
+        print("\n".join(retire(cfg, production, args.dataset, args.user, args.workspace_name, args.dry_run)))
     return 0
 
 

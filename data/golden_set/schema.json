@@ -131,31 +131,6 @@
       "then": {
         "properties": { "supporting_docs": { "minItems": 2 } }
       }
-    },
-    {
-      "if": {
-        "properties": {
-          "provenance": {
-            "properties": { "adjudicated": { "const": false } },
-            "required": ["adjudicated"]
-          }
-        },
-        "required": ["provenance"]
-      },
-      "then": {
-        "properties": {
-          "time_invariance": {
-            "properties": {
-              "votes": { "items": { "const": 1 } }
-            }
-          }
-        }
-      },
-      "else": {
-        "properties": {
-          "provenance": { "required": ["adjudication_note"] }
-        }
-      }
     }
   ],
   "$defs": {
@@ -267,8 +242,8 @@
           "type": "array",
           "minItems": 3,
           "maxItems": 3,
-          "items": { "enum": [0, 1] },
-          "description": "Метки инвариантности z_r(q) трёх аннотаторов (R = 3) в порядке provenance.annotators. Для неадъюдицированных записей все равны 1 (единогласие)."
+          "items": { "const": 1 },
+          "description": "Метки инвариантности z_r(q) трёх аннотаторов (R = 3) в порядке provenance.annotators; у включённой записи все равны 1 (единогласие, ADR-027)."
         },
         "exclusion_rules_checked": {
           "type": "array",
@@ -309,8 +284,8 @@
           "type": "array",
           "minItems": 3,
           "maxItems": 3,
-          "items": { "enum": [0, 1] },
-          "description": "Метки отвечаемости трёх аннотаторов; для записи G∅ все равны 0 либо запись адъюдицирована."
+          "items": { "const": 0 },
+          "description": "Метки отвечаемости трёх аннотаторов для записи G∅: все равны 0 (единогласие, ADR-027)."
         },
         "checked_at": {
           "type": "string",
@@ -328,7 +303,6 @@
         "draft",
         "seed_pool_ref",
         "annotators",
-        "adjudicated",
         "created_at"
       ],
       "properties": {
@@ -372,14 +346,6 @@
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^A[0-9]+$" },
           "description": "Обезличенные идентификаторы аннотаторов (A1, A2, A3); порядок задаёт порядок голосов."
-        },
-        "adjudicated": {
-          "type": "boolean",
-          "description": "true, если элемент включён решением адъюдикатора при отсутствии единогласия."
-        },
-        "adjudication_note": {
-          "type": ["string", "null"],
-          "description": "Причина и суть решения адъюдикатора; обязательна при adjudicated = true."
         },
         "created_at": {
           "type": "string",

@@ -1,4 +1,6 @@
 # Разметка пилота в Argilla и материалы для аннотаторов (docs/annotation_guidelines.md).
+# Пилот объединён с основным раундом в единый пул (ADR-027, code/configs/annotation_main.yaml);
+# датасет pilot-v0.1 снят с сервера, конфигурация сохранена для воспроизводимости материалов пилота.
 # Учётные данные владельца Argilla — ARGILLA_API_URL и ARGILLA_API_KEY в .env; пароли аннотаторов
 # пишутся только в data/_private/ (в репозиторий не входит).
 
@@ -27,9 +29,7 @@ argilla:
   api_url: ${ARGILLA_API_URL}
   api_key: ${ARGILLA_API_KEY}
   workspace: golden-set
-  adjudication_workspace: adjudication
   dataset: pilot-v0.1
   min_submitted: 3              # R = 3 независимых ответа на запись
   annotators: [a1, a2, a3]      # коды аннотаторов; соответствие людям хранится вне репозитория
-  adjudicator: adj
   seed: 20260917                # порядок записей

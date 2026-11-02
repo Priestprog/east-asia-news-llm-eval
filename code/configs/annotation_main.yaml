@@ -1,0 +1,41 @@
+# Единый раунд разметки в Argilla: все 300 позиций — пилот (30) и основной раунд (270) одним пулом (ADR-027).
+# Интерфейс тот же, что у пилота (code/configs/annotation.yaml): поля, форма, шаблоны, памятка и инструкция
+# строятся одним кодом (code/annotation/argilla_tasks.py). Разметка — только аннотаторами A1–A3, без адъюдикатора.
+# Учётные данные владельца Argilla — ARGILLA_API_URL и ARGILLA_API_KEY в .env.
+
+selection: pool                 # pilot | main | pool (code.annotation.generate_drafts.round_positions)
+
+paths:
+  positions: data/seed_pool/sampled_documents.jsonl
+  drafts:                       # черновики пилота (draft-v1) и основного раунда (draft-v2, ADR-026)
+    - data/golden_set/v0.1-pilot/drafts.jsonl
+    - data/golden_set/drafts/drafts.jsonl
+  documents: data/_cache/documents
+  translations: data/_cache/translations
+  snippet_translations: data/_cache/translations/snippets.json
+  retrieval:                    # топ-20 по вопросам черновиков; переводы фрагментов не публикуются (ADR-025)
+    - data/_cache/retrieval/pilot_top20.jsonl
+    - data/_cache/retrieval/main_top20.jsonl
+  annotations: data/golden_set/drafts/annotations.jsonl
+  accounts: data/_private/annotator_accounts.csv
+  guidelines: docs/annotation_guidelines.md
+  preview: data/_cache/argilla_preview_main.html
+  manifest: data/_cache/upload_manifest_main.json
+
+# Топ-K ретривера промышленной системы у всех позиций (роли позиций не раскрываются)
+retrieval:
+  embedder: distiluse-base-multilingual-cased-v2   # как у f_prod (rag_module.py)
+  k: 20
+  formulations: [ru, en, zh]                       # вопрос черновика и его переводы моделью перевода
+  snippet_chars: 300
+  translate_snippets: true
+  workers: 3
+
+argilla:
+  api_url: ${ARGILLA_API_URL}
+  api_key: ${ARGILLA_API_KEY}
+  workspace: golden-set
+  dataset: main-v1.0
+  min_submitted: 3              # R = 3 независимых ответа на запись
+  annotators: [a1, a2, a3]      # коды аннотаторов; соответствие людям хранится вне репозитория
+  seed: 20261102                # порядок записей (одинаков для всех аннотаторов)

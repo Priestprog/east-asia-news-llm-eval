@@ -4,7 +4,7 @@ r"""Сборка и заморозка эталонной выборки $G = G^
 question_type, category, answerable, answer{canonical, aliases, type, lang},
 supporting_docs[{webpage_id, urn_uuid, uri, published_at, source, evidence_span_ru, evidence_span_zh}],
 requires_multi_doc, time_invariance{label, anchor_date, votes, exclusion_rules_checked},
-difficulty, provenance{draft_model, draft_prompt_id, seed_pool_ref, annotators, adjudicated, created_at}``.
+difficulty, provenance{draft_model, draft_prompt_id, seed_pool_ref, annotators, created_at}``.
 
 Ограничения: $|S^*_i| \ge 1$ для $G^+$; $n \ge 150$ (цель 200–300); $n_{\bot} \approx 0.1\,n$;
 разбиение dev (30) / test с фиксированным seed; заморозка версии — sha256 файла в CHANGELOG.

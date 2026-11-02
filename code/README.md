@@ -97,7 +97,7 @@ code/
 │   ├── generate_drafts.py       # черновики (q, a, S, evidence, тип, дата) генератором g_draft на модели ℓ_draft ∉ L; seed pool
 │   ├── export_sheets.py         # листы для R=3 аннотаторов и для человеческой валидации h
 │   ├── agreement.py             # krippendorff_alpha, fleiss_kappa, pairwise_answer_f1
-│   ├── adjudicate.py            # расхождения → четвёртый эксперт
+│   ├── aggregate.py             # сведение разметки трёх аннотаторов → итоговая запись
 │   └── build_golden_set.py      # JSONL по schema.json, split dev/test, sha256
 ├── systems/                     # H_eval
 │   ├── base.py                  # System.answer(question) -> SystemOutput(answer, cited_ids, raw, model_reported)
@@ -134,7 +134,7 @@ $`\bar m_k(f)`$ идёт по $`I_k(f) = \{i : m_k \ne \mathrm{NA}\}`$.
 | `make audit` | базовый эксперимент: загрузка наборов, таблицы `results/audit/`, рисунки `results/figures/` |
 | `make drafts` | отбор документов, черновики моделью $`g_{\mathrm{draft}}`$, листы разметки |
 | `make agreement` | $`\alpha`$ Криппендорфа, Fleiss $`\kappa`$, попарный F1 ответов аннотаторов |
-| `make build-gs` | адъюдикация и сборка Golden Set версии `GS_VERSION` (JSONL, sha256) |
+| `make build-gs` | сведение разметки аннотаторов и сборка Golden Set версии `GS_VERSION` (JSONL, sha256) |
 | `make run SYSTEM=code/configs/systems/prod.yaml` | генерации системы на split из `eval.yaml` |
 | `make judge RUN_ID=<run_id>` | оценка генераций судьёй |
 | `make validate` | отбор $`M'`$ по согласию с аннотаторами → `results/tables/validation.csv` |

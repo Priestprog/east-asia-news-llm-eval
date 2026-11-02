@@ -255,7 +255,7 @@ def write_report(positions: Sequence[dict], cfg: dict) -> str:
         rows.append(f"| {p['position_id']} | {p['webpage_id']} | {p['region']} | {len(tr['paragraphs'])} | "
                     + " | ".join(str(checks.get(k, 0)) for k in kinds) + f" | {retried} |")
     lines = [
-        "# Перевод документов пилота (ADR-025)",
+        f"# Перевод документов {cfg.get('report_title', 'пилота')} (ADR-025)",
         "",
         f"Модель: {', '.join(sorted(models)) or '—'}; промпт `{cfg['prompt_id']}` (шаблоны авторов модели, "
         f"`code/configs/translation.yaml`); temperature {cfg['temperature']}; по абзацам, контекст — предыдущий абзац.",
@@ -287,6 +287,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--pilot", action="store_true", help="только документы пилота")
+    parser.add_argument("--main", action="store_true", help="основной раунд: 270 документов без пилота")
+    parser.add_argument("--report-path", default=None,
+                        help="куда писать отчёт (по умолчанию paths.report из конфигурации — отчёт пилота)")
     parser.add_argument("--limit", type=int, default=None, help="не больше N документов (отладка)")
     parser.add_argument("--workers", type=int, default=None)
     parser.add_argument("--force", action="store_true", help="перевести заново и готовые документы")
@@ -306,7 +309,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         ru, model = translator.translate("香港特區政府今日宣布，2023年第一季本地生產總值按年實質上升2.7%。")
         print(f"{model} ({time.time() - started:.1f} с): {ru}")
         return 0
-    positions = load_positions(REPO_ROOT / cfg["paths"]["positions"], pilot=args.pilot)[: args.limit]
+    if args.pilot and args.main:
+        raise SystemExit("--pilot и --main несовместимы")
+    if args.report_path:
+        cfg["paths"]["report"] = args.report_path
+    cfg["report_title"] = "основного раунда" if args.main else "пилота" if args.pilot else "основных позиций"
+    positions = load_positions(REPO_ROOT / cfg["paths"]["positions"], pilot=args.pilot, main=args.main)[: args.limit]
     if args.report:
         recheck(positions, cfg)
     else:

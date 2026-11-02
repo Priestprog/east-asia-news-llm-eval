@@ -10,7 +10,7 @@ $\alpha_h$ по шкалам 0–5 на $G_h$)
 ``None`` — пропущенная метка; единицы с менее чем двумя метками не участвуют.
 
 Вход CLI — ``annotations.jsonl`` из ``argilla_tasks pull`` (строки ``{"draft_id", "annotator",
-<поля>}``), выход — ``agreement.json`` со сводкой и списком единиц для ``adjudicate``.
+<поля>}``), выход — ``agreement.json`` со сводкой и списком единиц без согласия (вход ``aggregate``).
 """
 
 from __future__ import annotations
@@ -122,7 +122,7 @@ def pairwise_answer_f1(answers: Sequence[Sequence[str | Sequence[str] | None]]) 
 
     $\mathrm{F1}(a, a') = \frac{2 P R}{P + R}$ по мультимножествам лемм после нормализации
     (та же ``normalize``/лемматизация, что в ``code.eval.metrics_reference``). Порог включения
-    единицы — $\ge 0.8$; ниже — адъюдикация. Пары с пропуском не учитываются.
+    единицы — $\ge 0.8$ хотя бы у одной пары; ниже — исключение. Пары с пропуском не учитываются.
     ``answers[j]`` — ответы единицы $j$ по аннотаторам: строка или «ответ + алиасы».
     """
     per_unit = [sum(fs) / len(fs) for unit in answers if (fs := unit_answer_f1(unit))]
@@ -143,7 +143,7 @@ def agreement_report(
     f1_min: float = 0.8,
 ) -> dict:
     r"""Сводка: $\alpha$ и $\kappa$ по каждому полю с вердиктом (ниже порога / допустимо / надёжно),
-    попарный F1 ответов, список единиц ниже порога — вход для ``adjudicate``."""
+    попарный F1 ответов, список единиц ниже порога — вход для ``aggregate``."""
     annotators = sorted({a["annotator"] for a in annotations})
     units = sorted({a["draft_id"] for a in annotations})
     cell = {(a["annotator"], a["draft_id"]): a for a in annotations}
@@ -231,7 +231,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  попарный F1 ответов = {report['pairwise_answer_f1']} ({report['f1_verdict']})")
     print(f"  G1 (alpha инвариантности ≥ порога): {'да' if report['gate_g1'] else 'нет'}; "
           f"критерий пилота: {'выполнен' if report['pilot_success'] else 'не выполнен'}; "
-          f"к адъюдикации или исключению: {len(report['flagged_units'])}")
+          f"без согласия (к исключению): {len(report['flagged_units'])}")
     return 0
 
 
