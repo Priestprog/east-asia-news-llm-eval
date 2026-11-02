@@ -1,6 +1,7 @@
 # Единый раунд разметки в Argilla: все 300 позиций — пилот (30) и основной раунд (270) одним пулом (ADR-027).
 # Интерфейс тот же, что у пилота (code/configs/annotation.yaml): поля, форма, шаблоны, памятка и инструкция
-# строятся одним кодом (code/annotation/argilla_tasks.py). Разметка — только аннотаторами A1–A3, без адъюдикатора.
+# строятся одним кодом (code/annotation/argilla_tasks.py). Размечают аннотаторы A1–A14: каждую запись — трое из них,
+# записи раздаёт Argilla (ADR-028).
 # Учётные данные владельца Argilla — ARGILLA_API_URL и ARGILLA_API_KEY в .env.
 
 selection: pool                 # pilot | main | pool (code.annotation.generate_drafts.round_positions)
@@ -36,6 +37,6 @@ argilla:
   api_key: ${ARGILLA_API_KEY}
   workspace: golden-set
   dataset: main-v1.0
-  min_submitted: 3              # R = 3 независимых ответа на запись
-  annotators: [a1, a2, a3]      # коды аннотаторов; соответствие людям хранится вне репозитория
+  min_submitted: 3              # R = 3 независимых ответа на запись (любые трое из пула аннотаторов)
+  annotators: [a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14]   # коды аннотаторов; соответствие людям — вне репозитория
   seed: 20261102                # порядок записей (одинаков для всех аннотаторов)

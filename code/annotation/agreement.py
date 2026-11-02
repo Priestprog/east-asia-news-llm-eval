@@ -75,15 +75,17 @@ def fleiss_kappa(labels: Sequence[Sequence[Label]]) -> float:
     r"""Fleiss $\kappa = (\bar P - \bar P_e) / (1 - \bar P_e)$ для номинальных меток.
 
     $\bar P$ — средняя по единицам доля согласных пар аннотаторов, $\bar P_e = \sum_c p_c^2$,
-    где $p_c$ — доля меток категории $c$. Требует одинакового числа меток на единицу;
-    единицы с пропусками исключаются (отличие от $\alpha$). Даётся как вторая, более
-    известная комиссии мера.
+    где $p_c$ — доля меток категории $c$. Требует одинакового числа меток на единицу: у каждой
+    единицы берутся имеющиеся метки (аннотаторы у единиц могут быть разными — пул из нескольких
+    аннотаторов, по три ответа на запись), учитываются единицы с наиболее частым числом меток
+    (отличие от $\alpha$, которая учитывает все пары). Даётся как вторая, более известная комиссии мера.
     """
-    units = [[row[j] for row in labels] for j in range(len(labels[0]) if labels else 0)]
-    units = [u for u in units if all(v is not None for v in u)]
-    if not units or len(units[0]) < 2:
+    units = [[row[j] for row in labels if row[j] is not None] for j in range(len(labels[0]) if labels else 0)]
+    counts = Counter(len(u) for u in units if len(u) >= 2)
+    if not counts:
         return math.nan
-    m = len(units[0])
+    m = counts.most_common(1)[0][0]
+    units = [u for u in units if len(u) == m]
     p_units = [(sum(c * c for c in Counter(u).values()) - m) / (m * (m - 1)) for u in units]
     totals = Counter(v for u in units for v in u)
     p_e = sum((c / (len(units) * m)) ** 2 for c in totals.values())
